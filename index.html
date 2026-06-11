@@ -15,13 +15,11 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
   body{max-width:760px;margin:0 auto;padding:18px 14px 90px}
-
   .syncbar{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;
     color:var(--ink-faint);margin-bottom:14px;min-height:18px}
   .syncdot{width:7px;height:7px;border-radius:50%;background:var(--ink-faint);flex:none}
   .syncdot.ok{background:var(--accent2)}.syncdot.err{background:var(--danger)}.syncdot.busy{background:var(--accent)}
   .syncbar .cfg{margin-left:auto;color:var(--ink-dim);cursor:pointer;text-decoration:underline}
-
   .top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px}
   .datewrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
   .dnum{font-family:var(--mono);font-size:50px;line-height:.9;font-weight:600;letter-spacing:-1px}
@@ -36,25 +34,21 @@
     font-size:14px;padding:8px 12px;border-radius:9px;cursor:pointer;font-family:var(--mono)}
   button.today{color:var(--accent);border-color:var(--accent)}
   button.nav:active,button.today:active{background:var(--panel2)}
-
   .dutybar{display:flex;align-items:center;gap:9px;margin:16px 0 4px;flex-wrap:wrap}
   .dutybar label{font-size:12px;color:var(--ink-faint);letter-spacing:.5px}
   .dutybar select{background:var(--panel);border:1px solid var(--line);color:var(--ink);
     padding:7px 11px;border-radius:8px;font-size:14px;font-family:var(--sans)}
   .streak{font-family:var(--mono);font-size:12px;color:var(--accent2)}
-
   .prog{margin:16px 0 22px}
   .progtrack{height:8px;background:var(--panel);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
   .progfill{height:100%;width:0;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .35s ease}
   .proglabel{display:flex;justify-content:space-between;margin-top:7px;font-family:var(--mono);font-size:12px;color:var(--ink-dim)}
-
   .group{margin-bottom:22px}
   .ghead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .gdot{width:9px;height:9px;border-radius:3px;flex:none}
   .gname{font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
   .gsub{font-size:11px;color:var(--ink-faint);font-family:var(--mono)}
   .gline{flex:1;height:1px;background:var(--line)}
-
   ul{list-style:none}
   li.item{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);
     border-radius:11px;padding:14px 15px;margin-bottom:7px;cursor:pointer;transition:background .15s,transform .05s}
@@ -67,11 +61,9 @@
   li.done .label{color:var(--ink-faint);text-decoration:line-through}
   .freq{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--line);color:var(--ink-dim);flex:none}
   .empty{color:var(--ink-faint);font-size:14px;padding:18px;text-align:center;border:1px dashed var(--line);border-radius:11px}
-
   .toolbar{display:flex;gap:8px;margin-top:26px;flex-wrap:wrap}
   .toolbar button{background:transparent;border:1px solid var(--line);color:var(--ink-dim);font-size:13px;padding:10px 14px;border-radius:9px;cursor:pointer;font-family:var(--sans)}
   .toolbar button:active{color:var(--ink);border-color:var(--ink-faint)}
-
   dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:0;max-width:520px;width:92%;box-shadow:0 24px 60px rgba(0,0,0,.5)}
   dialog::backdrop{background:rgba(5,10,14,.66)}
   .dlg-h{padding:18px 20px 6px;font-size:16px;font-weight:700}
@@ -90,15 +82,15 @@
   .manage-item .mlabel{flex:1;font-size:14px}
   .manage-item .mmeta{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
   .manage-item .del{background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:20px;padding:0 4px}
+  .manage-item .edit{background:transparent;border:1px solid var(--line);color:var(--accent2);cursor:pointer;font-size:12px;padding:5px 10px;border-radius:7px}
+  .manage-item .edit:active{background:var(--panel2)}
   .hint{font-size:12px;color:var(--ink-faint);margin:2px 0 14px;line-height:1.6}
 </style>
-
 <div class="syncbar">
   <span class="syncdot" id="syncdot"></span>
   <span id="syncmsg">未接続</span>
   <span class="cfg" id="cfgLink">同期設定</span>
 </div>
-
 <div class="top">
   <div class="datewrap">
     <div class="dnum" id="dnum">--</div>
@@ -114,7 +106,6 @@
     <input type="date" id="datePick">
   </div>
 </div>
-
 <div class="dutybar">
   <label>勤務区分</label>
   <select id="duty">
@@ -124,22 +115,18 @@
   </select>
   <span class="streak" id="streak"></span>
 </div>
-
 <div class="prog">
   <div class="progtrack"><div class="progfill" id="progfill"></div></div>
   <div class="proglabel"><span id="progtxt">0 / 0 完了</span><span id="progpct">0%</span></div>
 </div>
-
 <div id="groups"></div>
-
 <div class="toolbar">
   <button id="addBtn">＋ 項目を追加</button>
   <button id="manageBtn">項目を管理</button>
   <button id="resetDay">今日のチェックをクリア</button>
 </div>
-
 <dialog id="addDlg">
-  <div class="dlg-h">項目を追加</div>
+  <div class="dlg-h" id="addDlgTitle">項目を追加</div>
   <div class="dlg-b">
     <div class="field"><label>タスク名</label><input id="f_label" placeholder="例：白湯を飲む"></div>
     <div class="row2">
@@ -160,15 +147,13 @@
       <div class="row2"><input id="f_dom1" type="number" min="1" max="31" placeholder="開始 例：25"><input id="f_dom2" type="number" min="1" max="31" placeholder="終了 例：30"></div></div>
     <p class="hint">「毎週」で曜日、「毎月」で日付範囲を指定できます。土日が休みでも週次・月次は指定どおり出ます。</p>
   </div>
-  <div class="dlg-f"><button class="btn-ghost" onclick="addDlg.close()">キャンセル</button><button class="btn-primary" id="saveItem">保存</button></div>
+  <div class="dlg-f"><button class="btn-ghost" onclick="editingId=null;addDlg.close()">キャンセル</button><button class="btn-primary" id="saveItem">保存</button></div>
 </dialog>
-
 <dialog id="manageDlg">
   <div class="dlg-h">項目を管理</div>
   <div class="dlg-b" id="manageList"></div>
   <div class="dlg-f"><button class="btn-primary" onclick="manageDlg.close()">閉じる</button></div>
 </dialog>
-
 <dialog id="cfgDlg">
   <div class="dlg-h">同期設定</div>
   <div class="dlg-b">
@@ -178,7 +163,6 @@
   </div>
   <div class="dlg-f"><button class="btn-ghost" onclick="cfgDlg.close()">閉じる</button><button class="btn-primary" id="saveUrl">接続して同期</button></div>
 </dialog>
-
 <script>
 const WD=["日","月","火","水","木","金","土"];
 const GROUPS=[
@@ -207,18 +191,15 @@ const DEFAULTS=[
   {label:"各銀行へ必要資金を振り込む（給料日後）",group:"monthly",freq:"monthly",dom:[25,30]},
 ];
 const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url";
-
 function load(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function lset(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
-
 let items=load(K_ITEMS,null);
 if(!items){items=DEFAULTS.map((d,i)=>({id:"d"+i+"_"+Math.random().toString(36).slice(2,7),...d}));lset(K_ITEMS,items);}
 let checks=load(K_CHECKS,{}),duties=load(K_DUTY,{}),gasUrl=load(K_URL,"");
 let cur=new Date();cur.setHours(0,0,0,0);
 let syncTimer=null;
-
 /* ---------- sync ---------- */
 function setSync(state,msg){
   const d=document.getElementById("syncdot");d.className="syncdot"+(state?" "+state:"");
@@ -254,7 +235,6 @@ async function push(){
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
 }
-
 /* ---------- logic ---------- */
 function dueToday(it,d){
   const wd=d.getDay(),dom=d.getDate(),weekend=(wd===0||wd===6);
@@ -282,7 +262,6 @@ function render(){
   tag.style.color=(wd===0)?"#d98fb0":(wd===6)?"#7fb0c0":"#9fb8c8";
   document.getElementById("datePick").value=key;
   document.getElementById("duty").value=duties[key]||"";
-
   const dayChecks=checks[key]||{};
   const due=items.filter(it=>dueToday(it,cur));
   const cont=document.getElementById("groups");cont.innerHTML="";
@@ -329,7 +308,6 @@ function streak(){
     d.setDate(d.getDate()-1);
   }return n;
 }
-
 /* ---------- nav ---------- */
 document.getElementById("prev").onclick=()=>{cur.setDate(cur.getDate()-1);render();};
 document.getElementById("next").onclick=()=>{cur.setDate(cur.getDate()+1);render();};
@@ -337,20 +315,47 @@ document.getElementById("todayBtn").onclick=()=>{cur=new Date();cur.setHours(0,0
 document.getElementById("datePick").onchange=e=>{const[y,m,da]=e.target.value.split("-").map(Number);cur=new Date(y,m-1,da);render();};
 document.getElementById("duty").onchange=e=>{duties[iso(cur)]=e.target.value;lset(K_DUTY,duties);pushSoon();};
 document.getElementById("resetDay").onclick=()=>{if(confirm("この日のチェックをすべて消しますか？")){delete checks[iso(cur)];lset(K_CHECKS,checks);render();pushSoon();}};
-
-/* ---------- add ---------- */
+/* ---------- add / edit ---------- */
 const addDlg=document.getElementById("addDlg");
-document.getElementById("addBtn").onclick=()=>{document.getElementById("f_label").value="";buildWd();onFreqChange();addDlg.showModal();};
+let editingId=null;
+function openForm(it){
+  editingId = it ? it.id : null;
+  document.getElementById("addDlgTitle").textContent = it ? "項目を編集" : "項目を追加";
+  document.getElementById("f_label").value = it ? it.label : "";
+  document.getElementById("f_group").value = it ? it.group : "body";
+  document.getElementById("f_freq").value  = it ? it.freq  : "daily";
+  buildWd();
+  if(it && it.freq==="weekly"){
+    document.querySelectorAll("#wdPick span").forEach(s=>{
+      if((it.days||[]).includes(+s.dataset.w))s.classList.add("on");
+    });
+  }
+  document.getElementById("f_dom1").value = (it && it.dom) ? it.dom[0] : "";
+  document.getElementById("f_dom2").value = (it && it.dom) ? it.dom[1] : "";
+  onFreqChange();
+  addDlg.showModal();
+}
+document.getElementById("addBtn").onclick=()=>openForm(null);
 function buildWd(){const p=document.getElementById("wdPick");p.innerHTML="";[1,2,3,4,5,6,0].forEach(w=>{const s=document.createElement("span");s.textContent=WD[w];s.dataset.w=w;s.onclick=()=>s.classList.toggle("on");p.appendChild(s);});}
 function onFreqChange(){const f=document.getElementById("f_freq").value;document.getElementById("wdField").style.display=(f==="weekly")?"block":"none";document.getElementById("domField").style.display=(f==="monthly")?"block":"none";}
 document.getElementById("saveItem").onclick=()=>{
   const label=document.getElementById("f_label").value.trim();if(!label){alert("タスク名を入力してください");return;}
-  const it={id:"u"+Date.now().toString(36),label,group:document.getElementById("f_group").value,freq:document.getElementById("f_freq").value};
-  if(it.freq==="weekly"){it.days=[...document.querySelectorAll("#wdPick .on")].map(s=>+s.dataset.w);if(!it.days.length){alert("曜日を選んでください");return;}}
-  if(it.freq==="monthly"){const a=+document.getElementById("f_dom1").value||1,b=+document.getElementById("f_dom2").value||a;it.dom=[Math.min(a,b),Math.max(a,b)];}
-  items.push(it);lset(K_ITEMS,items);addDlg.close();render();pushSoon();
+  const freq=document.getElementById("f_freq").value;
+  const data={label,group:document.getElementById("f_group").value,freq};
+  if(freq==="weekly"){data.days=[...document.querySelectorAll("#wdPick .on")].map(s=>+s.dataset.w);if(!data.days.length){alert("曜日を選んでください");return;}}
+  if(freq==="monthly"){const a=+document.getElementById("f_dom1").value||1,b=+document.getElementById("f_dom2").value||a;data.dom=[Math.min(a,b),Math.max(a,b)];}
+  if(editingId){
+    const it=items.find(x=>x.id===editingId);
+    if(it){it.label=data.label;it.group=data.group;it.freq=data.freq;
+      it.days=data.days;it.dom=data.dom;
+      if(freq!=="weekly")delete it.days;
+      if(freq!=="monthly")delete it.dom;}
+  }else{
+    items.push({id:"u"+Date.now().toString(36),...data});
+  }
+  lset(K_ITEMS,items);addDlg.close();editingId=null;render();pushSoon();
+  if(manageDlg.open)buildManage();
 };
-
 /* ---------- manage ---------- */
 const manageDlg=document.getElementById("manageDlg");
 document.getElementById("manageBtn").onclick=()=>{buildManage();manageDlg.showModal();};
@@ -361,13 +366,13 @@ function buildManage(){
     const h=document.createElement("div");h.style.cssText="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:"+gr.color+";margin:12px 0 4px;font-weight:700";h.textContent=gr.name;c.appendChild(h);
     list.forEach(it=>{
       const row=document.createElement("div");row.className="manage-item";
-      row.innerHTML=`<span class="mlabel">${esc(it.label)}</span><span class="mmeta">${freqLabel(it)}</span><button class="del">×</button>`;
+      row.innerHTML=`<span class="mlabel">${esc(it.label)}</span><span class="mmeta">${freqLabel(it)}</span><button class="edit">編集</button><button class="del">×</button>`;
+      row.querySelector(".edit").onclick=()=>openForm(it);
       row.querySelector(".del").onclick=()=>{if(confirm("「"+it.label+"」を削除しますか？")){items=items.filter(x=>x.id!==it.id);lset(K_ITEMS,items);buildManage();render();pushSoon();}};
       c.appendChild(row);
     });
   });
 }
-
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");
 document.getElementById("cfgLink").onclick=()=>{document.getElementById("f_url").value=gasUrl||"";document.getElementById("cfgStatus").textContent="";cfgDlg.showModal();};
@@ -378,12 +383,10 @@ document.getElementById("saveUrl").onclick=async()=>{
   try{
     const r=await fetch(u,{method:"GET"});const j=await r.json();
     if(j&&j.ok){gasUrl=u;lset(K_URL,u);document.getElementById("cfgStatus").textContent="接続成功。同期します。";
-      // マージ：既存ローカルを一度プッシュしてから取得
       await push();await pull();cfgDlg.close();}
     else document.getElementById("cfgStatus").textContent="URLは届きましたが応答が想定外です。デプロイ設定を確認してください。";
   }catch(e){document.getElementById("cfgStatus").textContent="接続できません。URLとアクセス権（全員）を確認してください。";}
 };
-
 /* ---------- boot ---------- */
 render();
 pull();

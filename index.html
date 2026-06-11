@@ -148,9 +148,10 @@
     <div class="row2">
       <div class="field"><label>グループ</label>
         <select id="f_group">
-          <option value="body">身体を整える</option><option value="family">家族</option>
-          <option value="market">相場前チェック</option><option value="weekly">週次</option>
-          <option value="monthly">月次</option><option value="other">その他</option>
+          <option value="body">健康</option><option value="family">家族</option>
+          <option value="market">投資</option><option value="work">仕事</option>
+          <option value="weekly">週次</option><option value="monthly">月次</option>
+          <option value="annual">年次</option><option value="other">その他</option>
         </select></div>
       <div class="field"><label>頻度</label>
         <select id="f_freq" onchange="onFreqChange()">
@@ -191,11 +192,13 @@
 <script>
 const WD=["日","月","火","水","木","金","土"];
 const GROUPS=[
-  {id:"body",name:"身体を整える",sub:"morning ritual",color:"#e0a458"},
+  {id:"body",name:"健康",sub:"health",color:"#e0a458"},
   {id:"family",name:"家族",sub:"family",color:"#7fa8d6"},
-  {id:"market",name:"相場前チェック",sub:"pre-market",color:"#5fb3a3"},
+  {id:"market",name:"投資",sub:"investment",color:"#5fb3a3"},
+  {id:"work",name:"仕事",sub:"work",color:"#6bbf78"},
   {id:"weekly",name:"週次",sub:"weekly",color:"#b98cd6"},
   {id:"monthly",name:"月次",sub:"monthly",color:"#d4795f"},
+  {id:"annual",name:"年次",sub:"annual",color:"#c9a14a"},
   {id:"other",name:"その他",sub:"other",color:"#8aa2b2"},
 ];
 const DEFAULTS=[

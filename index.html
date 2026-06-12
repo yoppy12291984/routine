@@ -158,6 +158,7 @@
           <option value="daily">毎日（平日）</option><option value="everyday">毎日（土日含む）</option>
           <option value="weekly">毎週（曜日指定）</option><option value="monthly">毎月（日付範囲）</option>
           <option value="yearly">毎年（月日の範囲）</option>
+          <option value="once">特定の日付（単発）</option>
         </select></div>
     </div>
     <div class="field" id="wdField" style="display:none"><label>曜日（複数可）</label><div class="wd-pick" id="wdPick"></div></div>
@@ -168,7 +169,9 @@
         <div class="row2"><input id="f_ym1" type="number" min="1" max="12" placeholder="開始月 例：6"><input id="f_yd1" type="number" min="1" max="31" placeholder="開始日 例：14"></div>
         <div class="row2"><input id="f_ym2" type="number" min="1" max="12" placeholder="終了月 例：6"><input id="f_yd2" type="number" min="1" max="31" placeholder="終了日 例：30"></div>
       </div></div>
-    <p class="hint">「毎週」で曜日、「毎月」で日付範囲を指定できます。土日が休みでも週次・月次は指定どおり出ます。</p>
+    <div class="field" id="onceField" style="display:none"><label>日付（特定の1日）</label>
+      <input id="f_once" type="date"></div>
+    <p class="hint">「毎週」で曜日、「毎月」で日付範囲、「毎年」で月日の範囲、「特定の日付」で1日だけ指定できます。土日が休みでも、各指定はそのとおり出ます。</p>
   </div>
   <div class="dlg-f"><button class="btn-ghost" onclick="editingId=null;addDlg.close()">キャンセル</button><button class="btn-primary" id="saveItem">保存</button></div>
 </dialog>
@@ -280,6 +283,7 @@ function dueToday(it,d){
     const a=ymd[0]*100+ymd[1], b=ymd[2]*100+ymd[3];  // 開始MMDD・終了MMDD
     return a<=b ? (cur>=a&&cur<=b) : (cur>=a||cur<=b); // 年またぎ対応
   }
+  if(it.freq==="once")return it.once===iso(d);
   return false;
 }
 function freqLabel(it){
@@ -288,6 +292,7 @@ function freqLabel(it){
   if(it.freq==="weekly")return(it.days||[]).map(x=>WD[x]).join("・");
   if(it.freq==="monthly")return`${(it.dom||[])[0]}–${(it.dom||[])[1]}日`;
   if(it.freq==="yearly"){const y=it.ymd||[];return`毎年${y[0]}/${y[1]}–${y[2]}/${y[3]}`;}
+  if(it.freq==="once"){const o=(it.once||"").split("-");return o.length===3?`${+o[1]}/${+o[2]}`:"単発";}
   return"";
 }
 function render(){
@@ -379,12 +384,13 @@ function openForm(it){
   document.getElementById("f_yd1").value = (it && it.ymd) ? it.ymd[1] : "";
   document.getElementById("f_ym2").value = (it && it.ymd) ? it.ymd[2] : "";
   document.getElementById("f_yd2").value = (it && it.ymd) ? it.ymd[3] : "";
+  document.getElementById("f_once").value = (it && it.once) ? it.once : "";
   onFreqChange();
   addDlg.showModal();
 }
 document.getElementById("addBtn").onclick=()=>openForm(null);
 function buildWd(){const p=document.getElementById("wdPick");p.innerHTML="";[1,2,3,4,5,6,0].forEach(w=>{const s=document.createElement("span");s.textContent=WD[w];s.dataset.w=w;s.onclick=()=>s.classList.toggle("on");p.appendChild(s);});}
-function onFreqChange(){const f=document.getElementById("f_freq").value;document.getElementById("wdField").style.display=(f==="weekly")?"block":"none";document.getElementById("domField").style.display=(f==="monthly")?"block":"none";document.getElementById("ymdField").style.display=(f==="yearly")?"block":"none";}
+function onFreqChange(){const f=document.getElementById("f_freq").value;document.getElementById("wdField").style.display=(f==="weekly")?"block":"none";document.getElementById("domField").style.display=(f==="monthly")?"block":"none";document.getElementById("ymdField").style.display=(f==="yearly")?"block":"none";document.getElementById("onceField").style.display=(f==="once")?"block":"none";}
 document.getElementById("saveItem").onclick=()=>{
   const label=document.getElementById("f_label").value.trim();if(!label){alert("タスク名を入力してください");return;}
   const freq=document.getElementById("f_freq").value;
@@ -397,13 +403,15 @@ document.getElementById("saveItem").onclick=()=>{
     if(!m1||!d1||!m2||!d2){alert("開始月日・終了月日をすべて入力してください");return;}
     data.ymd=[m1,d1,m2,d2];
   }
+  if(freq==="once"){const o=document.getElementById("f_once").value;if(!o){alert("日付を選んでください");return;}data.once=o;}
   if(editingId){
     const it=items.find(x=>x.id===editingId);
     if(it){it.label=data.label;it.group=data.group;it.freq=data.freq;
-      it.days=data.days;it.dom=data.dom;it.ymd=data.ymd;
+      it.days=data.days;it.dom=data.dom;it.ymd=data.ymd;it.once=data.once;
       if(freq!=="weekly")delete it.days;
       if(freq!=="monthly")delete it.dom;
-      if(freq!=="yearly")delete it.ymd;}
+      if(freq!=="yearly")delete it.ymd;
+      if(freq!=="once")delete it.once;}
   }else{
     items.push({id:"u"+Date.now().toString(36),...data});
   }

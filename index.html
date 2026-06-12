@@ -202,6 +202,7 @@ const GROUPS=[
   {id:"weekly",name:"週次",sub:"weekly",color:"#b98cd6"},
   {id:"monthly",name:"月次",sub:"monthly",color:"#d4795f"},
   {id:"annual",name:"年次",sub:"annual",color:"#c9a14a"},
+  {id:"cal",name:"予定",sub:"calendar",color:"#5fb3d6"},
   {id:"other",name:"その他",sub:"other",color:"#8aa2b2"},
 ];
 const DEFAULTS=[
@@ -231,6 +232,7 @@ function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;
 let items=load(K_ITEMS,null);
 if(!items){items=DEFAULTS.map((d,i)=>({id:"d"+i+"_"+Math.random().toString(36).slice(2,7),...d}));lset(K_ITEMS,items);}
 let checks=load(K_CHECKS,{}),duties=load(K_DUTY,{}),gasUrl=load(K_URL,"");
+let calItems=[];   // カレンダー由来（GASが正・ローカル保存もpushもしない）
 let cur=new Date();cur.setHours(0,0,0,0);
 let syncTimer=null;
 
@@ -250,6 +252,7 @@ async function pull(){
       if(Array.isArray(s.items)&&s.items.length){items=s.items;lset(K_ITEMS,items);}
       if(s.checks){checks=s.checks;lset(K_CHECKS,checks);}
       if(s.duties){duties=s.duties;lset(K_DUTY,duties);}
+      calItems=Array.isArray(s.calItems)?s.calItems:[];   // カレンダー予定（保存しない）
       setSync("ok","同期済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
       render();
     }else{setSync("err","応答エラー");}
@@ -271,6 +274,7 @@ async function push(){
 }
 
 /* ---------- logic ---------- */
+function allItems(){return calItems.length?items.concat(calItems):items;}
 function dueToday(it,d){
   const wd=d.getDay(),dom=d.getDate(),weekend=(wd===0||wd===6);
   if(it.freq==="everyday")return true;
@@ -308,7 +312,7 @@ function render(){
   document.getElementById("duty").value=duties[key]||"";
 
   const dayChecks=checks[key]||{};
-  const due=items.filter(it=>dueToday(it,cur));
+  const due=allItems().filter(it=>dueToday(it,cur));
   const cont=document.getElementById("groups");cont.innerHTML="";
   let total=0,done=0;
   GROUPS.forEach(gr=>{
@@ -323,10 +327,11 @@ function render(){
     list.forEach(it=>{
       total++;const isDone=!!dayChecks[it.id];if(isDone)done++;
       const li=document.createElement("li");li.className="item"+(isDone?" done":"");
+      const badge=it.cal?(it.note||"予定"):(it.freq!=="daily"?freqLabel(it):"");
       li.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe">
         <path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span class="label">${esc(it.label)}</span>
-        ${it.freq!=="daily"?`<span class="freq">${freqLabel(it)}</span>`:""}`;
+        ${badge?`<span class="freq">${esc(badge)}</span>`:""}`;
       li.onclick=()=>toggle(key,it.id);
       ul.appendChild(li);
     });
@@ -348,7 +353,7 @@ function toggle(key,id){
 function streak(){
   let n=0;const d=new Date();d.setHours(0,0,0,0);
   for(let i=0;i<400;i++){
-    const due=items.filter(it=>dueToday(it,d));
+    const due=allItems().filter(it=>dueToday(it,d));
     if(due.length){const dc=checks[iso(d)]||{};if(!due.every(it=>dc[it.id]))break;n++;}
     d.setDate(d.getDate()-1);
   }return n;

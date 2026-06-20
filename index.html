@@ -235,18 +235,25 @@ let checks=load(K_CHECKS,{}),duties=load(K_DUTY,{}),gasUrl=load(K_URL,"");
 let calItems=[];   // カレンダー由来（GASが正・ローカル保存もpushもしない）
 let cur=new Date();cur.setHours(0,0,0,0);
 let syncTimer=null;
+let pendingPush=false;     // ローカル変更が未送信
+let pushing=false;         // push実行中
+let lastLocalEdit=0;       // 最後にローカル操作した時刻
 
 /* ---------- sync ---------- */
 function setSync(state,msg){
   const d=document.getElementById("syncdot");d.className="syncdot"+(state?" "+state:"");
   document.getElementById("syncmsg").textContent=msg;
 }
+// ローカル操作の直後はサーバー取得で上書きしない（2回押し問題の防止）
+function localBusy(){return pendingPush||pushing||(Date.now()-lastLocalEdit<2000);}
 async function pull(){
   if(!gasUrl){setSync("","ローカル保存のみ（同期設定でPC↔スマホ連動）");return;}
+  if(localBusy())return;                 // 未送信のローカル変更があれば取得しない
   setSync("busy","同期中…");
   try{
     const r=await fetch(gasUrl,{method:"GET"});
     const j=await r.json();
+    if(localBusy())return;               // 取得中に操作が入ったら結果は破棄
     if(j&&j.ok&&j.state){
       const s=j.state;
       if(Array.isArray(s.items)&&s.items.length){items=s.items;lset(K_ITEMS,items);}
@@ -259,18 +266,23 @@ async function pull(){
   }catch(e){setSync("err","オフライン（ローカルに保存中）");}
 }
 function pushSoon(){
+  lastLocalEdit=Date.now();
+  pendingPush=true;
   if(!gasUrl)return;
   clearTimeout(syncTimer);
   syncTimer=setTimeout(push,600);
 }
 async function push(){
-  if(!gasUrl)return;
+  if(!gasUrl){pendingPush=false;return;}
+  pushing=true;
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({items,checks,duties})});
+    pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
+  finally{pushing=false;}
 }
 
 /* ---------- logic ---------- */

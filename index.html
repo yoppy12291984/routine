@@ -1,6 +1,4 @@
 <meta charset="utf-8">
-<!-- redeploy trigger 2 -->
-<!-- retry 3 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Routine">
@@ -216,20 +214,29 @@ const DEFAULT_GROUPS=[
 ];
 const GROUP_COLORS=["#e0a458","#7fa8d6","#5fb3a3","#6bbf78","#b98cd6","#d4795f","#c9a14a","#5fb3d6","#e2823a","#7cc4b0","#d68fb0","#9ab86a","#c0985f","#8aa2b2"];
 const DEFAULTS=[
-  {label:"白湯を飲む",group:"body",freq:"daily"},
-  {label:"ストレッチをする",group:"body",freq:"daily"},
-  {label:"瞑想する",group:"body",freq:"daily"},
-  {label:"お薬を飲む",group:"body",freq:"everyday"},
-  {label:"子のスクリレ（予定表）を確認する",group:"family",freq:"daily"},
-  {label:"子の学校の準備をする",group:"family",freq:"daily"},
-  {label:"日経新聞を読む",group:"market",freq:"daily"},
-  {label:"株探を見る",group:"market",freq:"daily"},
-  {label:"四季報を確認する",group:"market",freq:"daily"},
-  {label:"TradingViewをチェックする",group:"market",freq:"daily"},
+  // 健康
+  {label:"ワークアウト",group:"body",freq:"everyday"},
+  {label:"薬を飲む",group:"body",freq:"everyday"},
+  // 家族
+  {label:"スクリレを確認",group:"family",freq:"everyday"},
+  {label:"学校の準備をする",group:"family",freq:"everyday"},
+  {label:"能開の予習",group:"family",freq:"weekly",days:[5]},
+  // 投資
+  {label:"日経新聞を読む",group:"market",freq:"everyday"},
+  {label:"株探を見る",group:"market",freq:"weekly",days:[1,3,6,0]},
+  {label:"四季報を確認する",group:"market",freq:"weekly",days:[1,3,6,0]},
+  {label:"TradingViewをチェックする",group:"market",freq:"everyday"},
+  {label:"kaviewを確認する",group:"market",freq:"everyday"},
+  // 仕事
+  {label:"外来予習",group:"work",freq:"weekly",days:[4,5]},
+  {label:"メールを確認する",group:"work",freq:"everyday"},
+  {label:"Slack",group:"work",freq:"everyday"},
+  // 週次
   {label:"信用倍率をチェックする",group:"weekly",freq:"weekly",days:[2]},
   {label:"裁定取引（裁定残）を確認する",group:"weekly",freq:"weekly",days:[3]},
   {label:"海外投資家の売買動向を確認する",group:"weekly",freq:"weekly",days:[4]},
   {label:"スクリーナーExcelを作成（モメンタム/キャンセル/ターンオーバー）",group:"weekly",freq:"weekly",days:[6]},
+  // 月次
   {label:"各銀行へ必要資金を振り込む（給料日後）",group:"monthly",freq:"monthly",dom:[25,30]},
 ];
 const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url",K_GROUPS="routine_groups_v2";

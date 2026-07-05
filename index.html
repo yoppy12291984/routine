@@ -140,7 +140,6 @@
   <button id="manageBtn">項目を管理</button>
   <button id="groupBtn">グループを管理</button>
   <button id="resetDay">今日のチェックをクリア</button>
-  <button id="resetAll" style="border-color:#d4795f;color:#d4795f">初期項目に戻す</button>
 </div>
 
 <dialog id="addDlg">
@@ -399,14 +398,6 @@ document.getElementById("todayBtn").onclick=()=>{cur=new Date();cur.setHours(0,0
 document.getElementById("datePick").onchange=e=>{const[y,m,da]=e.target.value.split("-").map(Number);cur=new Date(y,m-1,da);render();};
 document.getElementById("duty").onchange=e=>{duties[iso(cur)]=e.target.value;lset(K_DUTY,duties);pushSoon();};
 document.getElementById("resetDay").onclick=()=>{if(confirm("この日のチェックをすべて消しますか？")){delete checks[iso(cur)];lset(K_CHECKS,checks);render();pushSoon();}};
-document.getElementById("resetAll").onclick=()=>{
-  if(!confirm("項目とグループを初期状態に戻します。今の項目は消えます。よろしいですか？"))return;
-  items=DEFAULTS.map((d,i)=>({id:"d"+i+"_"+Math.random().toString(36).slice(2,7),...d}));
-  GROUPS=DEFAULT_GROUPS.map(g=>({...g}));
-  lset(K_ITEMS,items);lset(K_GROUPS,GROUPS);
-  render();pushSoon();
-  alert("初期項目に戻しました。同期している場合は他の端末にも反映されます。");
-};
 
 /* ---------- add / edit ---------- */
 const addDlg=document.getElementById("addDlg");

@@ -3,7 +3,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Routine">
 <title>Daily Routine</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230f1922' stroke='%235fb3a3' stroke-width='4'/%3E%3Cpath d='M50 18 A32 32 0 1 1 18 50' fill='none' stroke='%23e0a458' stroke-width='10' stroke-linecap='round'/%3E%3Cpolyline points='12,42 18,50 26,40' fill='none' stroke='%23e0a458' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='35,50 46,62 66,38' fill='none' stroke='%235fb3a3' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%230b1a26' stroke='%2300c2a8' stroke-width='4'/%3E%3Cpath d='M50 18 A32 32 0 1 1 18 50' fill='none' stroke='%23ff8c1a' stroke-width='10' stroke-linecap='round'/%3E%3Cpolyline points='35,50 46,62 66,38' fill='none' stroke='%2300c2a8' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root{
@@ -138,6 +138,7 @@
 <div class="toolbar">
   <button id="addBtn">＋ 項目を追加</button>
   <button id="manageBtn">項目を管理</button>
+  <button id="groupBtn">グループを管理</button>
   <button id="resetDay">今日のチェックをクリア</button>
 </div>
 
@@ -147,12 +148,7 @@
     <div class="field"><label>タスク名</label><input id="f_label" placeholder="例：白湯を飲む"></div>
     <div class="row2">
       <div class="field"><label>グループ</label>
-        <select id="f_group">
-          <option value="body">健康</option><option value="family">家族</option>
-          <option value="market">投資</option><option value="work">仕事</option>
-          <option value="weekly">週次</option><option value="monthly">月次</option>
-          <option value="annual">年次</option><option value="other">その他</option>
-        </select></div>
+        <select id="f_group"></select></div>
       <div class="field"><label>頻度</label>
         <select id="f_freq" onchange="onFreqChange()">
           <option value="daily">毎日（平日）</option><option value="everyday">毎日（土日含む）</option>
@@ -182,6 +178,17 @@
   <div class="dlg-f"><button class="btn-primary" onclick="manageDlg.close()">閉じる</button></div>
 </dialog>
 
+<dialog id="groupDlg">
+  <div class="dlg-h">グループを管理</div>
+  <div class="dlg-b">
+    <div class="field"><label>新しいグループを追加</label>
+      <div class="row2"><input id="g_new" placeholder="例：勉強"><button class="btn-primary" id="g_add" style="flex:none">追加</button></div></div>
+    <p class="hint">名前を入れて「追加」を押すと、新しいグループができます。色は自動で割り当てます。既存のグループは名前を変えたり削除したりできます。項目が残っているグループは削除できません（先に項目を移すか削除してください）。</p>
+    <div id="groupList"></div>
+  </div>
+  <div class="dlg-f"><button class="btn-primary" onclick="groupDlg.close()">閉じる</button></div>
+</dialog>
+
 <dialog id="cfgDlg">
   <div class="dlg-h">同期設定</div>
   <div class="dlg-b">
@@ -194,7 +201,7 @@
 
 <script>
 const WD=["日","月","火","水","木","金","土"];
-const GROUPS=[
+const DEFAULT_GROUPS=[
   {id:"body",name:"健康",sub:"health",color:"#e0a458"},
   {id:"family",name:"家族",sub:"family",color:"#7fa8d6"},
   {id:"market",name:"投資",sub:"investment",color:"#5fb3a3"},
@@ -205,6 +212,7 @@ const GROUPS=[
   {id:"cal",name:"予定",sub:"calendar",color:"#5fb3d6"},
   {id:"other",name:"その他",sub:"other",color:"#8aa2b2"},
 ];
+const GROUP_COLORS=["#e0a458","#7fa8d6","#5fb3a3","#6bbf78","#b98cd6","#d4795f","#c9a14a","#5fb3d6","#e2823a","#7cc4b0","#d68fb0","#9ab86a","#c0985f","#8aa2b2"];
 const DEFAULTS=[
   {label:"白湯を飲む",group:"body",freq:"daily"},
   {label:"ストレッチをする",group:"body",freq:"daily"},
@@ -222,7 +230,7 @@ const DEFAULTS=[
   {label:"スクリーナーExcelを作成（モメンタム/キャンセル/ターンオーバー）",group:"weekly",freq:"weekly",days:[6]},
   {label:"各銀行へ必要資金を振り込む（給料日後）",group:"monthly",freq:"monthly",dom:[25,30]},
 ];
-const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url";
+const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url",K_GROUPS="routine_groups_v2";
 
 function load(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function lset(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -231,6 +239,8 @@ function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;
 
 let items=load(K_ITEMS,null);
 if(!items){items=DEFAULTS.map((d,i)=>({id:"d"+i+"_"+Math.random().toString(36).slice(2,7),...d}));lset(K_ITEMS,items);}
+let GROUPS=load(K_GROUPS,null);
+if(!GROUPS){GROUPS=DEFAULT_GROUPS.map(g=>({...g}));lset(K_GROUPS,GROUPS);}
 let checks=load(K_CHECKS,{}),duties=load(K_DUTY,{}),gasUrl=load(K_URL,"");
 let calItems=[];   // カレンダー由来（GASが正・ローカル保存もpushもしない）
 let cur=new Date();cur.setHours(0,0,0,0);
@@ -259,6 +269,7 @@ async function pull(){
       if(Array.isArray(s.items)&&s.items.length){items=s.items;lset(K_ITEMS,items);}
       if(s.checks){checks=s.checks;lset(K_CHECKS,checks);}
       if(s.duties){duties=s.duties;lset(K_DUTY,duties);}
+      if(Array.isArray(s.groups)&&s.groups.length){GROUPS=s.groups;lset(K_GROUPS,GROUPS);}
       calItems=Array.isArray(s.calItems)?s.calItems:[];   // カレンダー予定（保存しない）
       setSync("ok","同期済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
       render();
@@ -278,7 +289,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -383,11 +394,16 @@ document.getElementById("resetDay").onclick=()=>{if(confirm("この日のチェ�
 const addDlg=document.getElementById("addDlg");
 let editingId=null;   // null=新規追加、idがあれば編集
 
+function fillGroupSelect(sel){
+  const el=document.getElementById("f_group");el.innerHTML="";
+  GROUPS.forEach(gr=>{const o=document.createElement("option");o.value=gr.id;o.textContent=gr.name;el.appendChild(o);});
+  if(sel&&GROUPS.some(g=>g.id===sel))el.value=sel; else if(GROUPS[0])el.value=GROUPS[0].id;
+}
 function openForm(it){
   editingId = it ? it.id : null;
   document.getElementById("addDlgTitle").textContent = it ? "項目を編集" : "項目を追加";
   document.getElementById("f_label").value = it ? it.label : "";
-  document.getElementById("f_group").value = it ? it.group : "body";
+  fillGroupSelect(it ? it.group : null);
   document.getElementById("f_freq").value  = it ? it.freq  : "daily";
   buildWd();
   if(it && it.freq==="weekly"){
@@ -453,6 +469,50 @@ function buildManage(){
     });
   });
 }
+
+/* ---------- group manage ---------- */
+const groupDlg=document.getElementById("groupDlg");
+document.getElementById("groupBtn").onclick=()=>{buildGroups();groupDlg.showModal();};
+function nextGroupColor(){
+  const used=new Set(GROUPS.map(g=>g.color));
+  const free=GROUP_COLORS.find(c=>!used.has(c));
+  return free||GROUP_COLORS[GROUPS.length%GROUP_COLORS.length];
+}
+function buildGroups(){
+  const c=document.getElementById("groupList");c.innerHTML="";
+  GROUPS.forEach(gr=>{
+    const count=items.filter(it=>it.group===gr.id).length;
+    const isCal=(gr.id==="cal");
+    const row=document.createElement("div");row.className="manage-item";
+    row.innerHTML=`<span class="gdot" style="background:${gr.color};width:11px;height:11px;border-radius:3px"></span>
+      <input class="gname-in" value="${esc(gr.name)}" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:7px 9px;border-radius:7px;font-size:14px">
+      <span class="mmeta">${isCal?"カレンダー":count+"項目"}</span>
+      <button class="edit gsave">保存</button><button class="del">×</button>`;
+    const input=row.querySelector(".gname-in");
+    row.querySelector(".gsave").onclick=()=>{
+      const nm=input.value.trim();if(!nm){alert("グループ名を入力してください");return;}
+      gr.name=nm;lset(K_GROUPS,GROUPS);render();buildGroups();pushSoon();
+    };
+    row.querySelector(".del").onclick=()=>{
+      if(isCal){alert("「予定」はカレンダー連携用のグループなので削除できません。");return;}
+      if(count>0){alert("このグループには"+count+"項目が残っています。先に項目を移動または削除してください。");return;}
+      if(GROUPS.length<=1){alert("最後のグループは削除できません。");return;}
+      if(confirm("グループ「"+gr.name+"」を削除しますか？")){
+        GROUPS=GROUPS.filter(g=>g.id!==gr.id);lset(K_GROUPS,GROUPS);render();buildGroups();pushSoon();
+      }
+    };
+    c.appendChild(row);
+  });
+}
+document.getElementById("g_add").onclick=()=>{
+  const nm=document.getElementById("g_new").value.trim();
+  if(!nm){alert("グループ名を入力してください");return;}
+  const id="g"+Date.now().toString(36);
+  GROUPS.push({id,name:nm,sub:"",color:nextGroupColor()});
+  lset(K_GROUPS,GROUPS);
+  document.getElementById("g_new").value="";
+  render();buildGroups();pushSoon();
+};
 
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");

@@ -1376,12 +1376,13 @@ function drawCharts(d){
     ch+=arcPath(a,b,c);
   });
   ch+='<text x="100" y="105" text-anchor="middle" fill="var(--ink-dim)" font-size="12" font-family="monospace">24h</text>';
-  // 今日を見ているときだけ「現在時刻」を点で表示（線は無し）
+  // 今日を見ているときだけ「現在時刻」を短い線で表示（円周に垂直・円の上に重ねる）
   if(iso(tCur)===iso(new Date())){
     const now=new Date();const nowMin=now.getHours()*60+now.getMinutes();
     const a=(nowMin/1440)*2*Math.PI-Math.PI/2;
-    const hx=100+70*Math.cos(a),hy=100+70*Math.sin(a);
-    ch+=`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="4.5" fill="var(--danger)" stroke="var(--bg)" stroke-width="1.5"/>`;
+    const ix=100+61*Math.cos(a),iy=100+61*Math.sin(a);
+    const ox=100+79*Math.cos(a),oy=100+79*Math.sin(a);
+    ch+=`<line x1="${ix.toFixed(1)}" y1="${iy.toFixed(1)}" x2="${ox.toFixed(1)}" y2="${oy.toFixed(1)}" stroke="var(--danger)" stroke-width="3" stroke-linecap="round"/>`;
   }
   clock.innerHTML=ch;
   // 活動別合計 ドーナツ

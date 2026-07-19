@@ -116,6 +116,23 @@
   .dayev{font-size:14px;padding:8px 0;border-bottom:1px solid var(--line);display:flex;gap:8px}
   .dayev .t{font-family:var(--mono);font-size:12px;color:var(--ink-dim);flex:none;min-width:44px}
   .dayev-none{color:var(--ink-faint);font-size:13px;padding:6px 0}
+  .noteshead{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .noteshead .btn-primary{flex:none}
+  .viewtoggle{margin-left:auto;display:flex;gap:4px}
+  .vt{background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:var(--sans)}
+  .vt.on{background:var(--panel2);color:var(--ink);border-color:var(--accent)}
+  .notecard{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 15px;margin-bottom:9px;cursor:pointer}
+  .notecard:active{background:var(--panel2)}
+  .notecard .nt{font-size:15px;font-weight:700;margin-bottom:4px}
+  .notecard .nb{font-size:13px;color:var(--ink-dim);line-height:1.5;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+  .notecard .nd{font-size:11px;color:var(--ink-faint);font-family:var(--mono);margin-top:7px}
+  .notetable{width:100%;border-collapse:collapse;font-size:13px}
+  .notetable th{text-align:left;color:var(--ink-faint);font-size:11px;font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .notetable td{padding:9px 8px;border-bottom:1px solid var(--line);cursor:pointer;vertical-align:top}
+  .notetable tr:active td{background:var(--panel2)}
+  .notetable .td-title{font-weight:700}
+  .notetable .td-date{font-family:var(--mono);color:var(--ink-faint);white-space:nowrap}
+  .notes-empty{color:var(--ink-faint);font-size:14px;padding:24px;text-align:center;border:1px dashed var(--line);border-radius:11px}
 </style>
 
 <div class="syncbar">
@@ -128,6 +145,7 @@
   <button class="tab on" id="tabCheck">ルーチン</button>
   <button class="tab" id="tabWorkout">トレーニング</button>
   <button class="tab" id="tabCal">カレンダー</button>
+  <button class="tab" id="tabNotes">メモ</button>
 </div>
 
 <div id="viewCheck">
@@ -226,6 +244,17 @@
   </div>
 </div>
 
+<div id="viewNotes" style="display:none">
+  <div class="noteshead">
+    <button class="btn-primary" id="noteAdd">＋ メモを追加</button>
+    <div class="viewtoggle">
+      <button id="noteCardBtn" class="vt on">カード</button>
+      <button id="noteTableBtn" class="vt">表</button>
+    </div>
+  </div>
+  <div id="notesBox"></div>
+</div>
+
 <dialog id="addDlg">
   <div class="dlg-h" id="addDlgTitle">項目を追加</div>
   <div class="dlg-b">
@@ -294,6 +323,18 @@
   <div class="dlg-f"><button class="btn-ghost" id="dayGoto">この日を開く</button><button class="btn-primary" id="dayClose">閉じる</button></div>
 </dialog>
 
+<dialog id="noteDlg">
+  <div class="dlg-h" id="noteDlgTitle">メモ</div>
+  <div class="dlg-b">
+    <div class="field"><label>タイトル</label><input id="n_title" placeholder="例：来月の学会の準備"></div>
+    <div class="field"><label>内容</label>
+      <textarea id="n_body" rows="6" placeholder="自由に書けます"
+        style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:14px;font-family:var(--sans);resize:vertical"></textarea></div>
+    <div class="field"><label>日付</label><input id="n_date" type="date"></div>
+  </div>
+  <div class="dlg-f"><button class="btn-ghost" id="noteDel" style="color:var(--danger);border-color:var(--danger)">削除</button><button class="btn-ghost" onclick="noteDlg.close()">キャンセル</button><button class="btn-primary" id="noteSave">保存</button></div>
+</dialog>
+
 <script>
 const WD=["日","月","火","水","木","金","土"];
 const DEFAULT_GROUPS=[
@@ -334,7 +375,7 @@ const DEFAULTS=[
   // 月次
   {label:"各銀行へ必要資金を振り込む（給料日後）",group:"monthly",freq:"monthly",dom:[25,30]},
 ];
-const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url",K_GROUPS="routine_groups_v2",K_MEMOS="routine_memos_v1";
+const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url",K_GROUPS="routine_groups_v2",K_MEMOS="routine_memos_v1",K_NOTES="routine_notes_v1";
 
 function load(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function lset(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -347,6 +388,8 @@ let GROUPS=load(K_GROUPS,null);
 if(!GROUPS){GROUPS=DEFAULT_GROUPS.map(g=>({...g}));lset(K_GROUPS,GROUPS);}
 let checks=load(K_CHECKS,{}),duties=load(K_DUTY,{}),gasUrl=load(K_URL,"");
 let memos=load(K_MEMOS,{});   // {day:"2026-07-05":"...", month:"2026-07":"..."}
+let notes=load(K_NOTES,[]);   // [{id,title,body,date,cat}]
+let noteView=load("routine_noteview_v1","card");   // card | table
 let calMonth=new Date();calMonth.setDate(1);calMonth.setHours(0,0,0,0);
 
 /* ===== 筋トレ（workout）データ ===== */
@@ -409,6 +452,7 @@ async function pull(){
       if(s.duties){duties=s.duties;lset(K_DUTY,duties);}
       if(Array.isArray(s.groups)&&s.groups.length){GROUPS=s.groups;lset(K_GROUPS,GROUPS);}
       if(s.memos){memos=s.memos;lset(K_MEMOS,memos);}
+      if(Array.isArray(s.notes)){notes=s.notes;lset(K_NOTES,notes);}
       if(s.wk){
         if(Array.isArray(s.wk.items)&&s.wk.items.length){wItems=s.wk.items;lset(WK_ITEMS,wItems);}
         if(s.wk.checks){wChecks=s.wk.checks;lset(WK_CHECKS,wChecks);}
@@ -420,6 +464,7 @@ async function pull(){
       render();
       if(viewCal.style.display!=="none")renderCal();
       if(viewWorkout.style.display!=="none")wRender();
+      if(document.getElementById("viewNotes").style.display!=="none")renderNotes();
     }else{setSync("err","応答エラー");}
   }catch(e){setSync("err","オフライン（ローカルに保存中）");}
 }
@@ -436,7 +481,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -689,19 +734,23 @@ document.getElementById("g_add").onclick=()=>{
 const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElementById("viewCal");
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
-  const vw=document.getElementById("viewWorkout");
+  const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes");
   viewCheck.style.display=which==="check"?"block":"none";
   vw.style.display=which==="workout"?"block":"none";
   viewCal.style.display=which==="cal"?"block":"none";
+  vn.style.display=which==="notes"?"block":"none";
   tabCheck.classList.toggle("on",which==="check");
   document.getElementById("tabWorkout").classList.toggle("on",which==="workout");
   tabCal.classList.toggle("on",which==="cal");
+  document.getElementById("tabNotes").classList.toggle("on",which==="notes");
   if(which==="cal")renderCal();
   if(which==="workout")wRender();
+  if(which==="notes")renderNotes();
 }
 tabCheck.onclick=()=>showTab("check");
 tabCal.onclick=()=>showTab("cal");
 document.getElementById("tabWorkout").onclick=()=>showTab("workout");
+document.getElementById("tabNotes").onclick=()=>showTab("notes");
 
 function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
 function eventsByDay(){
@@ -868,6 +917,62 @@ document.getElementById("wResetAll").onclick=()=>{
 document.getElementById("wAddBtn").onclick=()=>{formMode="wk";openForm(null);};
 document.getElementById("wManageBtn").onclick=()=>{manageMode="wk";buildManage();manageDlg.showModal();};
 document.getElementById("wGroupBtn").onclick=()=>{groupMode="wk";buildGroups();groupDlg.showModal();};
+
+/* ---------- notes tab ---------- */
+const noteDlg=document.getElementById("noteDlg");
+let editingNoteId=null;
+function renderNotes(){
+  const box=document.getElementById("notesBox");
+  document.getElementById("noteCardBtn").classList.toggle("on",noteView==="card");
+  document.getElementById("noteTableBtn").classList.toggle("on",noteView==="table");
+  if(!notes.length){box.innerHTML='<div class="notes-empty">まだメモがありません。「＋ メモを追加」から作成できます。</div>';return;}
+  const sorted=notes.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  if(noteView==="table"){
+    let html='<table class="notetable"><thead><tr><th>日付</th><th>タイトル</th></tr></thead><tbody>';
+    sorted.forEach(n=>{html+=`<tr data-id="${n.id}"><td class="td-date">${esc(n.date||"")}</td><td class="td-title">${esc(n.title||"(無題)")}</td></tr>`;});
+    html+='</tbody></table>';box.innerHTML=html;
+    box.querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>openNote(notes.find(x=>x.id===tr.dataset.id)));
+  }else{
+    box.innerHTML="";
+    sorted.forEach(n=>{
+      const c=document.createElement("div");c.className="notecard";
+      c.innerHTML=`<div class="nt">${esc(n.title||"(無題)")}</div>${n.body?`<div class="nb">${esc(n.body)}</div>`:""}<div class="nd">${esc(n.date||"")}</div>`;
+      c.onclick=()=>openNote(n);
+      box.appendChild(c);
+    });
+  }
+}
+function openNote(n){
+  editingNoteId=n?n.id:null;
+  document.getElementById("noteDlgTitle").textContent=n?"メモを編集":"メモを追加";
+  document.getElementById("n_title").value=n?(n.title||""):"";
+  document.getElementById("n_body").value=n?(n.body||""):"";
+  document.getElementById("n_date").value=n?(n.date||iso(new Date())):iso(new Date());
+  document.getElementById("noteDel").style.display=n?"inline-block":"none";
+  noteDlg.showModal();
+}
+document.getElementById("noteAdd").onclick=()=>openNote(null);
+document.getElementById("noteCardBtn").onclick=()=>{noteView="card";lset("routine_noteview_v1",noteView);renderNotes();};
+document.getElementById("noteTableBtn").onclick=()=>{noteView="table";lset("routine_noteview_v1",noteView);renderNotes();};
+document.getElementById("noteSave").onclick=()=>{
+  const title=document.getElementById("n_title").value.trim();
+  const body=document.getElementById("n_body").value.trim();
+  const date=document.getElementById("n_date").value||iso(new Date());
+  if(!title&&!body){alert("タイトルか内容を入力してください");return;}
+  if(editingNoteId){
+    const n=notes.find(x=>x.id===editingNoteId);
+    if(n){n.title=title;n.body=body;n.date=date;}
+  }else{
+    notes.push({id:"n"+Date.now().toString(36),title,body,date,cat:""});
+  }
+  lset(K_NOTES,notes);noteDlg.close();editingNoteId=null;renderNotes();pushSoon();
+};
+document.getElementById("noteDel").onclick=()=>{
+  if(!editingNoteId)return;
+  if(!confirm("このメモを削除しますか？"))return;
+  notes=notes.filter(x=>x.id!==editingNoteId);
+  lset(K_NOTES,notes);noteDlg.close();editingNoteId=null;renderNotes();pushSoon();
+};
 
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");

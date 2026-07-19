@@ -177,6 +177,11 @@
   .pick-row.on .check{background:var(--accent2);border-color:var(--accent2)}
   .pick-row .check svg{width:12px;height:12px;opacity:0}.pick-row.on .check svg{opacity:1}
   .pick-row .tx{flex:1;font-size:14px}
+  .reminders .tsec-h{display:flex;align-items:center}
+  .mini-edit{margin-left:auto;background:none;border:1px solid var(--line);color:var(--ink-dim);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:var(--sans);font-weight:400;text-transform:none;letter-spacing:0}
+  .rem-item{display:flex;gap:9px;padding:6px 2px;font-size:14px;line-height:1.5;color:var(--ink)}
+  .rem-item .bullet{color:var(--accent);flex:none}
+  .rem-empty{color:var(--ink-faint);font-size:13px;padding:8px 2px}
   .tabview{margin:0 -14px;padding:14px 14px 8px;border-radius:14px}
   .vw-training{background:#181210}
   .vw-cal{background:#0f1a2e}
@@ -289,6 +294,11 @@
       <div class="chartbox"><svg id="totalChart" viewBox="0 0 200 200"></svg><div class="chart-cap">活動別合計</div></div>
     </div>
     <div id="chartLegend" class="legend"></div>
+  </div>
+
+  <div class="tsection reminders">
+    <div class="tsec-h">心がけ <button class="mini-edit" id="remEdit">編集</button></div>
+    <div id="remList"></div>
   </div>
 
   <div class="tsection">
@@ -488,6 +498,16 @@
   </div>
 </dialog>
 
+<dialog id="remDlg">
+  <div class="dlg-h">心がけを編集</div>
+  <div class="dlg-b">
+    <p class="hint">1行に1つずつ書いてください。ここに書いたものが毎日表示されます。</p>
+    <textarea id="remText" rows="8" placeholder="例：&#10;疲れたら音楽を聴く&#10;22時以降はブルーライトカット"
+      style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:14px;font-family:var(--sans);resize:vertical"></textarea>
+  </div>
+  <div class="dlg-f"><button class="btn-ghost" onclick="remDlg.close()">キャンセル</button><button class="btn-primary" id="remSave">保存</button></div>
+</dialog>
+
 <dialog id="pickDlg">
   <div class="dlg-h" id="pickTitle">取り込む項目を選択</div>
   <div class="dlg-b"><div id="pickList"></div></div>
@@ -571,7 +591,7 @@ const DEFAULTS=[
   // 月次
   {label:"各銀行へ必要資金を振り込む（給料日後）",group:"monthly",freq:"monthly",dom:[25,30]},
 ];
-const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url",K_GROUPS="routine_groups_v2",K_MEMOS="routine_memos_v1",K_NOTES="routine_notes_v1",K_TODAY="routine_today_v1";
+const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url",K_GROUPS="routine_groups_v2",K_MEMOS="routine_memos_v1",K_NOTES="routine_notes_v1",K_TODAY="routine_today_v1",K_REMIND="routine_reminders_v1";
 
 function load(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function lset(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -586,6 +606,7 @@ let checks=load(K_CHECKS,{}),duties=load(K_DUTY,{}),gasUrl=load(K_URL,"");
 let memos=load(K_MEMOS,{});   // {day:"2026-07-05":"...", month:"2026-07":"..."}
 let notes=load(K_NOTES,[]);   // [{id,title,body,date,cat}]
 let today=load(K_TODAY,{});   // { "2026-07-19": {todo:[{text,done}], plan:[{id,start,end,label,cat,fromCal}], reflection:"" } }
+let reminders=load(K_REMIND,[]);   // 毎日出る「心がけ」（文字列の配列）
 let tCur=new Date();tCur.setHours(0,0,0,0);
 const T_CAT_DEFAULTS=[
   {id:"sleep",name:"睡眠",color:"#7f8cd6"},
@@ -685,6 +706,7 @@ async function pull(){
       if(s.memos){memos=s.memos;lset(K_MEMOS,memos);}
       if(Array.isArray(s.notes)){notes=s.notes;lset(K_NOTES,notes);}
       if(s.today){today=s.today;lset(K_TODAY,today);}
+      if(Array.isArray(s.reminders)){reminders=s.reminders;lset(K_REMIND,reminders);}
       if(Array.isArray(s.tcats)&&s.tcats.length){T_CATS=s.tcats;ensureOther();lset("routine_tcats_v1",T_CATS);}
       if(s.wk){
         if(Array.isArray(s.wk.items)&&s.wk.items.length){wItems=s.wk.items;lset(WK_ITEMS,wItems);}
@@ -715,7 +737,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -1267,8 +1289,27 @@ function tRender(){
   });
   drawCharts(d);
   document.getElementById("tReflection").value=d.reflection||"";
+  renderReminders();
   renderMonthSummary();
 }
+function renderReminders(){
+  const box=document.getElementById("remList");if(!box)return;box.innerHTML="";
+  if(!reminders.length){box.innerHTML='<div class="rem-empty">「編集」から、毎日忘れたくないことを書けます。</div>';return;}
+  reminders.forEach(t=>{
+    const row=document.createElement("div");row.className="rem-item";
+    row.innerHTML=`<span class="bullet">・</span><span>${esc(t)}</span>`;
+    box.appendChild(row);
+  });
+}
+const remDlg=document.getElementById("remDlg");
+document.getElementById("remEdit").onclick=()=>{
+  document.getElementById("remText").value=reminders.join("\n");
+  remDlg.showModal();
+};
+document.getElementById("remSave").onclick=()=>{
+  reminders=document.getElementById("remText").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  lset(K_REMIND,reminders);remDlg.close();renderReminders();pushSoon();
+};
 document.getElementById("tPrev").onclick=()=>{tCur.setDate(tCur.getDate()-1);tRender();};
 document.getElementById("tNext").onclick=()=>{tCur.setDate(tCur.getDate()+1);tRender();};
 document.getElementById("tTodayBtn").onclick=()=>{tCur=new Date();tCur.setHours(0,0,0,0);tRender();};
@@ -1684,7 +1725,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v1.9";
+const APP_VERSION="OS v2.0";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

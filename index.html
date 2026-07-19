@@ -125,7 +125,8 @@
 </div>
 
 <div class="tabbar">
-  <button class="tab on" id="tabCheck">チェック</button>
+  <button class="tab on" id="tabCheck">ルーチン</button>
+  <button class="tab" id="tabWorkout">筋トレ</button>
   <button class="tab" id="tabCal">カレンダー</button>
 </div>
 
@@ -187,6 +188,41 @@
   <div class="calgrid-wrap">
     <div class="caldow"><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="sat">土</span><span class="sun">日</span></div>
     <div class="calgrid" id="calGrid"></div>
+  </div>
+</div>
+
+<div id="viewWorkout" style="display:none">
+  <div class="top">
+    <div class="datewrap">
+      <div class="dnum" id="wDnum">--</div>
+      <div class="dmeta">
+        <div class="dym" id="wDym">----.--</div>
+        <div class="dwd" id="wDwd">—<span class="wd" id="wWdtag"></span></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="nav" id="wPrev">‹</button>
+      <button class="today" id="wTodayBtn">今日</button>
+      <button class="nav" id="wNext">›</button>
+      <input type="date" id="wDatePick">
+    </div>
+  </div>
+  <div class="dutybar">
+    <label>今日の場所</label>
+    <select id="wDuty"><option value="">—</option><option>ジム</option><option>自宅</option><option>休養日</option></select>
+    <span class="streak" id="wStreak"></span>
+  </div>
+  <div class="prog">
+    <div class="progtrack"><div class="progfill" id="wProgfill"></div></div>
+    <div class="proglabel"><span id="wProgtxt">0 / 0 完了</span><span id="wProgpct">0%</span></div>
+  </div>
+  <div id="wGroups"></div>
+  <div class="toolbar">
+    <button id="wAddBtn">＋ 種目を追加</button>
+    <button id="wManageBtn">種目を管理</button>
+    <button id="wGroupBtn">グループを管理</button>
+    <button id="wResetDay">今日のチェックをクリア</button>
+    <button id="wResetAll" style="border-color:#e2523a;color:#e2523a">初期項目に戻す</button>
   </div>
 </div>
 
@@ -312,6 +348,38 @@ if(!GROUPS){GROUPS=DEFAULT_GROUPS.map(g=>({...g}));lset(K_GROUPS,GROUPS);}
 let checks=load(K_CHECKS,{}),duties=load(K_DUTY,{}),gasUrl=load(K_URL,"");
 let memos=load(K_MEMOS,{});   // {day:"2026-07-05":"...", month:"2026-07":"..."}
 let calMonth=new Date();calMonth.setDate(1);calMonth.setHours(0,0,0,0);
+
+/* ===== 筋トレ（workout）データ ===== */
+const W_DEFAULT_GROUPS=[
+  {id:"back",name:"背中",sub:"back",color:"#5fb3a3"},
+  {id:"legs",name:"脚",sub:"legs",color:"#d4795f"},
+  {id:"shoulder",name:"肩",sub:"shoulder",color:"#7fa8d6"},
+  {id:"arm",name:"腕",sub:"arms",color:"#b98cd6"},
+  {id:"core",name:"体幹",sub:"core",color:"#6bbf78"},
+  {id:"cardio",name:"有酸素",sub:"cardio",color:"#5fb3d6"},
+  {id:"stretch",name:"ストレッチ",sub:"stretch",color:"#e0a458"},
+  {id:"other",name:"その他",sub:"other",color:"#8aa2b2"},
+];
+const W_DEFAULTS=[
+  {label:"ラットプルダウン",group:"back",freq:"weekly",days:[2,4,0]},
+  {label:"スクワット",group:"legs",freq:"weekly",days:[1,3,6]},
+  {label:"サイドレイズ",group:"shoulder",freq:"weekly",days:[2,4,0]},
+  {label:"トライセプスエクステンション",group:"arm",freq:"weekly",days:[2,4,0]},
+  {label:"プランク",group:"core",freq:"weekly",days:[1,3,6]},
+  {label:"ウォーキング／ジョギング",group:"cardio",freq:"daily"},
+  {label:"ヘッドローリング",group:"stretch",freq:"everyday"},
+  {label:"チンタック",group:"stretch",freq:"everyday"},
+  {label:"万歳ストレッチ",group:"stretch",freq:"everyday"},
+  {label:"股関節のストレッチ",group:"stretch",freq:"everyday"},
+  {label:"距骨ストレッチ",group:"stretch",freq:"everyday"},
+];
+const WK_ITEMS="rt_wk_items_v1",WK_CHECKS="rt_wk_checks_v1",WK_DUTY="rt_wk_duty_v1",WK_GROUPS="rt_wk_groups_v1";
+let wItems=load(WK_ITEMS,null);
+if(!wItems){wItems=W_DEFAULTS.map((d,i)=>({id:"w"+i+"_"+Math.random().toString(36).slice(2,7),...d}));lset(WK_ITEMS,wItems);}
+let wGROUPS=load(WK_GROUPS,null);
+if(!wGROUPS){wGROUPS=W_DEFAULT_GROUPS.map(g=>({...g}));lset(WK_GROUPS,wGROUPS);}
+let wChecks=load(WK_CHECKS,{}),wDuties=load(WK_DUTY,{});
+let wCur=new Date();wCur.setHours(0,0,0,0);
 let calItems=[];   // カレンダー由来（GASが正・ローカル保存もpushもしない）
 let cur=new Date();cur.setHours(0,0,0,0);
 let syncTimer=null;
@@ -341,10 +409,17 @@ async function pull(){
       if(s.duties){duties=s.duties;lset(K_DUTY,duties);}
       if(Array.isArray(s.groups)&&s.groups.length){GROUPS=s.groups;lset(K_GROUPS,GROUPS);}
       if(s.memos){memos=s.memos;lset(K_MEMOS,memos);}
+      if(s.wk){
+        if(Array.isArray(s.wk.items)&&s.wk.items.length){wItems=s.wk.items;lset(WK_ITEMS,wItems);}
+        if(s.wk.checks){wChecks=s.wk.checks;lset(WK_CHECKS,wChecks);}
+        if(s.wk.duties){wDuties=s.wk.duties;lset(WK_DUTY,wDuties);}
+        if(Array.isArray(s.wk.groups)&&s.wk.groups.length){wGROUPS=s.wk.groups;lset(WK_GROUPS,wGROUPS);}
+      }
       calItems=Array.isArray(s.calItems)?s.calItems:[];   // カレンダー予定（保存しない）
       setSync("ok","同期済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
       render();
       if(viewCal.style.display!=="none")renderCal();
+      if(viewWorkout.style.display!=="none")wRender();
     }else{setSync("err","応答エラー");}
   }catch(e){setSync("err","オフライン（ローカルに保存中）");}
 }
@@ -361,7 +436,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -476,15 +551,23 @@ document.getElementById("resetAll").onclick=()=>{
 /* ---------- add / edit ---------- */
 const addDlg=document.getElementById("addDlg");
 let editingId=null;   // null=新規追加、idがあれば編集
-
+let formMode="rt", manageMode="rt", groupMode="rt";   // rt=ルーチン, wk=筋トレ
+// アクティブなデータセットへのアクセサ
+function actx(mode){
+  return mode==="wk"
+    ? {items:()=>wItems, setItems:(v)=>{wItems=v;lset(WK_ITEMS,wItems);}, groups:()=>wGROUPS, setGroups:(v)=>{wGROUPS=v;lset(WK_GROUPS,wGROUPS);}, saveItems:()=>lset(WK_ITEMS,wItems), saveGroups:()=>lset(WK_GROUPS,wGROUPS), rerender:wRender, itemWord:"種目"}
+    : {items:()=>items, setItems:(v)=>{items=v;lset(K_ITEMS,items);}, groups:()=>GROUPS, setGroups:(v)=>{GROUPS=v;lset(K_GROUPS,GROUPS);}, saveItems:()=>lset(K_ITEMS,items), saveGroups:()=>lset(K_GROUPS,GROUPS), rerender:render, itemWord:"項目"};
+}
 function fillGroupSelect(sel){
+  const gs=actx(formMode).groups();
   const el=document.getElementById("f_group");el.innerHTML="";
-  GROUPS.forEach(gr=>{const o=document.createElement("option");o.value=gr.id;o.textContent=gr.name;el.appendChild(o);});
-  if(sel&&GROUPS.some(g=>g.id===sel))el.value=sel; else if(GROUPS[0])el.value=GROUPS[0].id;
+  gs.forEach(gr=>{const o=document.createElement("option");o.value=gr.id;o.textContent=gr.name;el.appendChild(o);});
+  if(sel&&gs.some(g=>g.id===sel))el.value=sel; else if(gs[0])el.value=gs[0].id;
 }
 function openForm(it){
   editingId = it ? it.id : null;
-  document.getElementById("addDlgTitle").textContent = it ? "項目を編集" : "項目を追加";
+  const word=actx(formMode).itemWord;
+  document.getElementById("addDlgTitle").textContent = it ? (word+"を編集") : (word+"を追加");
   document.getElementById("f_label").value = it ? it.label : "";
   fillGroupSelect(it ? it.group : null);
   document.getElementById("f_freq").value  = it ? it.freq  : "daily";
@@ -504,11 +587,12 @@ function openForm(it){
   onFreqChange();
   addDlg.showModal();
 }
-document.getElementById("addBtn").onclick=()=>openForm(null);
+document.getElementById("addBtn").onclick=()=>{formMode="rt";openForm(null);};
 function buildWd(){const p=document.getElementById("wdPick");p.innerHTML="";[1,2,3,4,5,6,0].forEach(w=>{const s=document.createElement("span");s.textContent=WD[w];s.dataset.w=w;s.onclick=()=>s.classList.toggle("on");p.appendChild(s);});}
 function onFreqChange(){const f=document.getElementById("f_freq").value;document.getElementById("wdField").style.display=(f==="weekly")?"block":"none";document.getElementById("domField").style.display=(f==="monthly")?"block":"none";document.getElementById("ymdField").style.display=(f==="yearly")?"block":"none";document.getElementById("onceField").style.display=(f==="once")?"block":"none";}
 document.getElementById("saveItem").onclick=()=>{
-  const label=document.getElementById("f_label").value.trim();if(!label){alert("タスク名を入力してください");return;}
+  const ctx=actx(formMode);
+  const label=document.getElementById("f_label").value.trim();if(!label){alert(ctx.itemWord+"名を入力してください");return;}
   const freq=document.getElementById("f_freq").value;
   const data={label,group:document.getElementById("f_group").value,freq};
   if(freq==="weekly"){data.days=[...document.querySelectorAll("#wdPick .on")].map(s=>+s.dataset.w);if(!data.days.length){alert("曜日を選んでください");return;}}
@@ -520,8 +604,9 @@ document.getElementById("saveItem").onclick=()=>{
     data.ymd=[m1,d1,m2,d2];
   }
   if(freq==="once"){const o=document.getElementById("f_once").value;if(!o){alert("日付を選んでください");return;}data.once=o;}
+  const arr=ctx.items();
   if(editingId){
-    const it=items.find(x=>x.id===editingId);
+    const it=arr.find(x=>x.id===editingId);
     if(it){it.label=data.label;it.group=data.group;it.freq=data.freq;
       it.days=data.days;it.dom=data.dom;it.ymd=data.ymd;it.once=data.once;
       if(freq!=="weekly")delete it.days;
@@ -529,25 +614,26 @@ document.getElementById("saveItem").onclick=()=>{
       if(freq!=="yearly")delete it.ymd;
       if(freq!=="once")delete it.once;}
   }else{
-    items.push({id:"u"+Date.now().toString(36),...data});
+    arr.push({id:"u"+Date.now().toString(36),...data});
   }
-  lset(K_ITEMS,items);addDlg.close();editingId=null;render();pushSoon();
+  ctx.saveItems();addDlg.close();editingId=null;ctx.rerender();pushSoon();
   if(manageDlg.open)buildManage();
 };
 
 /* ---------- manage ---------- */
 const manageDlg=document.getElementById("manageDlg");
-document.getElementById("manageBtn").onclick=()=>{buildManage();manageDlg.showModal();};
+document.getElementById("manageBtn").onclick=()=>{manageMode="rt";buildManage();manageDlg.showModal();};
 function buildManage(){
+  const ctx=actx(manageMode);
   const c=document.getElementById("manageList");c.innerHTML="";
-  GROUPS.forEach(gr=>{
-    const list=items.filter(it=>it.group===gr.id);if(!list.length)return;
+  ctx.groups().forEach(gr=>{
+    const list=ctx.items().filter(it=>it.group===gr.id);if(!list.length)return;
     const h=document.createElement("div");h.style.cssText="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:"+gr.color+";margin:12px 0 4px;font-weight:700";h.textContent=gr.name;c.appendChild(h);
     list.forEach(it=>{
       const row=document.createElement("div");row.className="manage-item";
       row.innerHTML=`<span class="mlabel">${esc(it.label)}</span><span class="mmeta">${freqLabel(it)}</span><button class="edit">編集</button><button class="del">×</button>`;
-      row.querySelector(".edit").onclick=()=>openForm(it);
-      row.querySelector(".del").onclick=()=>{if(confirm("「"+it.label+"」を削除しますか？")){items=items.filter(x=>x.id!==it.id);lset(K_ITEMS,items);buildManage();render();pushSoon();}};
+      row.querySelector(".edit").onclick=()=>{formMode=manageMode;openForm(it);};
+      row.querySelector(".del").onclick=()=>{if(confirm("「"+it.label+"」を削除しますか？")){ctx.setItems(ctx.items().filter(x=>x.id!==it.id));buildManage();ctx.rerender();pushSoon();}};
       c.appendChild(row);
     });
   });
@@ -555,60 +641,67 @@ function buildManage(){
 
 /* ---------- group manage ---------- */
 const groupDlg=document.getElementById("groupDlg");
-document.getElementById("groupBtn").onclick=()=>{buildGroups();groupDlg.showModal();};
-function nextGroupColor(){
-  const used=new Set(GROUPS.map(g=>g.color));
+document.getElementById("groupBtn").onclick=()=>{groupMode="rt";buildGroups();groupDlg.showModal();};
+function nextGroupColor(gs){
+  const used=new Set(gs.map(g=>g.color));
   const free=GROUP_COLORS.find(c=>!used.has(c));
-  return free||GROUP_COLORS[GROUPS.length%GROUP_COLORS.length];
+  return free||GROUP_COLORS[gs.length%GROUP_COLORS.length];
 }
 function buildGroups(){
+  const ctx=actx(groupMode);
   const c=document.getElementById("groupList");c.innerHTML="";
-  GROUPS.forEach(gr=>{
-    const count=items.filter(it=>it.group===gr.id).length;
-    const isCal=(gr.id==="cal");
+  ctx.groups().forEach(gr=>{
+    const count=ctx.items().filter(it=>it.group===gr.id).length;
+    const isCal=(gr.id==="cal"&&groupMode==="rt");
     const row=document.createElement("div");row.className="manage-item";
     row.innerHTML=`<span class="gdot" style="background:${gr.color};width:11px;height:11px;border-radius:3px"></span>
       <input class="gname-in" value="${esc(gr.name)}" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:7px 9px;border-radius:7px;font-size:14px">
-      <span class="mmeta">${isCal?"カレンダー":count+"項目"}</span>
+      <span class="mmeta">${isCal?"カレンダー":count+"件"}</span>
       <button class="edit gsave">保存</button><button class="del">×</button>`;
     const input=row.querySelector(".gname-in");
     row.querySelector(".gsave").onclick=()=>{
       const nm=input.value.trim();if(!nm){alert("グループ名を入力してください");return;}
-      gr.name=nm;lset(K_GROUPS,GROUPS);render();buildGroups();pushSoon();
+      gr.name=nm;ctx.saveGroups();ctx.rerender();buildGroups();pushSoon();
     };
     row.querySelector(".del").onclick=()=>{
       if(isCal){alert("「予定」はカレンダー連携用のグループなので削除できません。");return;}
-      if(count>0){alert("このグループには"+count+"項目が残っています。先に項目を移動または削除してください。");return;}
-      if(GROUPS.length<=1){alert("最後のグループは削除できません。");return;}
+      if(count>0){alert("このグループには"+count+"件が残っています。先に移動または削除してください。");return;}
+      if(ctx.groups().length<=1){alert("最後のグループは削除できません。");return;}
       if(confirm("グループ「"+gr.name+"」を削除しますか？")){
-        GROUPS=GROUPS.filter(g=>g.id!==gr.id);lset(K_GROUPS,GROUPS);render();buildGroups();pushSoon();
+        ctx.setGroups(ctx.groups().filter(g=>g.id!==gr.id));ctx.rerender();buildGroups();pushSoon();
       }
     };
     c.appendChild(row);
   });
 }
 document.getElementById("g_add").onclick=()=>{
+  const ctx=actx(groupMode);
   const nm=document.getElementById("g_new").value.trim();
   if(!nm){alert("グループ名を入力してください");return;}
   const id="g"+Date.now().toString(36);
-  GROUPS.push({id,name:nm,sub:"",color:nextGroupColor()});
-  lset(K_GROUPS,GROUPS);
+  const gs=ctx.groups();gs.push({id,name:nm,sub:"",color:nextGroupColor(gs)});
+  ctx.saveGroups();
   document.getElementById("g_new").value="";
-  render();buildGroups();pushSoon();
+  ctx.rerender();buildGroups();pushSoon();
 };
 
 /* ---------- calendar tab ---------- */
 const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElementById("viewCal");
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
-  const cal=(which==="cal");
-  viewCal.style.display=cal?"block":"none";
-  viewCheck.style.display=cal?"none":"block";
-  tabCal.classList.toggle("on",cal);tabCheck.classList.toggle("on",!cal);
-  if(cal)renderCal();
+  const vw=document.getElementById("viewWorkout");
+  viewCheck.style.display=which==="check"?"block":"none";
+  vw.style.display=which==="workout"?"block":"none";
+  viewCal.style.display=which==="cal"?"block":"none";
+  tabCheck.classList.toggle("on",which==="check");
+  document.getElementById("tabWorkout").classList.toggle("on",which==="workout");
+  tabCal.classList.toggle("on",which==="cal");
+  if(which==="cal")renderCal();
+  if(which==="workout")wRender();
 }
 tabCheck.onclick=()=>showTab("check");
 tabCal.onclick=()=>showTab("cal");
+document.getElementById("tabWorkout").onclick=()=>showTab("workout");
 
 function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
 function eventsByDay(){
@@ -684,6 +777,88 @@ document.getElementById("dayGoto").onclick=()=>{
   cur=new Date(dayDlgDate);cur.setHours(0,0,0,0);
   dayDlg.close();showTab("check");render();
 };
+
+/* ---------- workout tab ---------- */
+const viewWorkout=document.getElementById("viewWorkout"),tabWorkout=document.getElementById("tabWorkout");
+function wRender(){
+  const key=iso(wCur);
+  document.getElementById("wDnum").textContent=wCur.getDate();
+  document.getElementById("wDym").textContent=wCur.getFullYear()+"."+String(wCur.getMonth()+1).padStart(2,"0");
+  const wd=wCur.getDay(),names=["日曜","月曜","火曜","水曜","木曜","金曜","土曜"];
+  document.getElementById("wDwd").firstChild.textContent=names[wd];
+  const tag=document.getElementById("wWdtag");tag.textContent=WD[wd];
+  tag.style.background=(wd===0)?"#3a2230":(wd===6)?"#22323a":"#1b3040";
+  tag.style.color=(wd===0)?"#d98fb0":(wd===6)?"#7fb0c0":"#9fb8c8";
+  document.getElementById("wDatePick").value=key;
+  document.getElementById("wDuty").value=wDuties[key]||"";
+  const dayChecks=wChecks[key]||{};
+  const due=wItems.filter(it=>dueToday(it,wCur));
+  const cont=document.getElementById("wGroups");cont.innerHTML="";
+  let total=0,done=0;
+  wGROUPS.forEach(gr=>{
+    const list=due.filter(it=>it.group===gr.id);if(!list.length)return;
+    const wrap=document.createElement("div");wrap.className="group";
+    const h=document.createElement("div");h.className="ghead";
+    h.innerHTML=`<span class="gdot" style="background:${gr.color}"></span>
+      <span class="gname" style="color:${gr.color}">${gr.name}</span>
+      <span class="gsub">${gr.sub||""}</span><span class="gline"></span>`;
+    wrap.appendChild(h);
+    const ul=document.createElement("ul");
+    list.forEach(it=>{
+      total++;const isDone=!!dayChecks[it.id];if(isDone)done++;
+      const li=document.createElement("li");li.className="item"+(isDone?" done":"");
+      const badge=it.freq!=="daily"?freqLabel(it):"";
+      li.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe">
+        <path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="label">${esc(it.label)}</span>
+        ${badge?`<span class="freq">${esc(badge)}</span>`:""}`;
+      li.onclick=()=>wToggle(key,it.id);
+      ul.appendChild(li);
+    });
+    wrap.appendChild(ul);cont.appendChild(wrap);
+  });
+  if(total===0)cont.innerHTML='<div class="empty">この日のメニューはありません。休養日にしましょう。</div>';
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById("wProgfill").style.width=pct+"%";
+  document.getElementById("wProgtxt").textContent=`${done} / ${total} 完了`;
+  document.getElementById("wProgpct").textContent=pct+"%";
+  document.getElementById("wStreak").textContent="🔥 連続 "+wStreak()+"日";
+}
+function wToggle(key,id){
+  if(!wChecks[key])wChecks[key]={};
+  if(wChecks[key][id])delete wChecks[key][id];else wChecks[key][id]=true;
+  if(!Object.keys(wChecks[key]).length)delete wChecks[key];
+  lset(WK_CHECKS,wChecks);wRender();pushSoon();
+}
+function wStreak(){
+  let n=0;const d=new Date();d.setHours(0,0,0,0);
+  for(let i=0;i<400;i++){
+    const due=wItems.filter(it=>dueToday(it,d));
+    if(due.length){const dc=wChecks[iso(d)]||{};if(!due.every(it=>dc[it.id]))break;n++;}
+    d.setDate(d.getDate()-1);
+  }return n;
+}
+document.getElementById("wPrev").onclick=()=>{wCur.setDate(wCur.getDate()-1);wRender();};
+document.getElementById("wNext").onclick=()=>{wCur.setDate(wCur.getDate()+1);wRender();};
+document.getElementById("wTodayBtn").onclick=()=>{wCur=new Date();wCur.setHours(0,0,0,0);wRender();};
+document.getElementById("wDatePick").onchange=e=>{const[y,m,da]=e.target.value.split("-").map(Number);wCur=new Date(y,m-1,da);wRender();};
+document.getElementById("wDuty").onchange=e=>{wDuties[iso(wCur)]=e.target.value;lset(WK_DUTY,wDuties);pushSoon();};
+document.getElementById("wResetDay").onclick=()=>{if(confirm("この日のチェックをすべて消しますか？")){delete wChecks[iso(wCur)];lset(WK_CHECKS,wChecks);wRender();pushSoon();}};
+document.getElementById("wResetAll").onclick=()=>{
+  if(!confirm("【警告】筋トレの種目とグループをすべて消して、初期状態に戻します。\n本当に実行しますか？"))return;
+  const ans=prompt("確認のため「リセット」と入力してください（キャンセルで中止）。\n※同期している場合、他の端末の筋トレ項目も消えます。");
+  if(ans===null)return;
+  if(ans.trim()!=="リセット"){alert("入力が違うため中止しました。");return;}
+  wItems=W_DEFAULTS.map((d,i)=>({id:"w"+i+"_"+Math.random().toString(36).slice(2,7),...d}));
+  wGROUPS=W_DEFAULT_GROUPS.map(g=>({...g}));
+  lset(WK_ITEMS,wItems);lset(WK_GROUPS,wGROUPS);
+  wRender();pushSoon();alert("初期項目に戻しました。");
+};
+
+/* 筋トレ：種目の追加/編集（ルーチンのダイアログを流用、mode切替） */
+document.getElementById("wAddBtn").onclick=()=>{formMode="wk";openForm(null);};
+document.getElementById("wManageBtn").onclick=()=>{manageMode="wk";buildManage();manageDlg.showModal();};
+document.getElementById("wGroupBtn").onclick=()=>{groupMode="wk";buildGroups();groupDlg.showModal();};
 
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");

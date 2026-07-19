@@ -299,10 +299,10 @@
     <button class="nav" id="calNext">›</button>
     <button class="today" id="calToday">今月</button>
   </div>
-  <div class="field" style="margin:10px 0 16px">
-    <label>今月やること</label>
-    <textarea id="monthMemo" rows="3" placeholder="1行ずつ書くと自動で・が付きます"
-      style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:14px;font-family:var(--sans);resize:vertical"></textarea>
+  <div class="tsection" style="margin:10px 0 16px">
+    <div class="tsec-h">今月やること</div>
+    <div id="monthTodoList"></div>
+    <div class="todo-add"><input id="monthTodoInput" placeholder="やることを入力してEnter"></div>
   </div>
   <div class="calgrid-wrap">
     <div class="caldow"><span class="sun">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="sat">土</span></div>
@@ -417,6 +417,8 @@
     <div class="field"><label>タブ2（トレーニング）</label><input id="tn_workout" placeholder="Training"></div>
     <div class="field"><label>タブ3（カレンダー）</label><input id="tn_cal" placeholder="Calendar"></div>
     <div class="field"><label>タブ4（メモ）</label><input id="tn_notes" placeholder="Notes"></div>
+    <p class="hint" style="margin-top:14px">タブの並び順を変更できます（▲▼で移動）。</p>
+    <div id="tabOrderList"></div>
     <p class="hint" style="margin-top:14px">Todayの予定で使う「定型」を編集できます（起床・就寝・食事など）。</p>
     <div id="presetList"></div>
     <div class="row2" style="margin-top:8px">
@@ -964,9 +966,8 @@ function eventsByDay(){
 }
 function renderCal(){
   document.getElementById("calMonth").textContent=calMonth.getFullYear()+"."+String(calMonth.getMonth()+1).padStart(2,"0");
-  // 月メモ
   const mkey=ym(calMonth);
-  const mm=document.getElementById("monthMemo");mm.value=(memos.month&&memos.month[mkey])||"";
+  renderMonthTodo(mkey);
   const evmap=eventsByDay();
   const grid=document.getElementById("calGrid");grid.innerHTML="";
   const y=calMonth.getFullYear(),m=calMonth.getMonth();
@@ -995,21 +996,31 @@ function renderCal(){
 document.getElementById("calPrev").onclick=()=>{calMonth.setMonth(calMonth.getMonth()-1);renderCal();};
 document.getElementById("calNext").onclick=()=>{calMonth.setMonth(calMonth.getMonth()+1);renderCal();};
 document.getElementById("calToday").onclick=()=>{calMonth=new Date();calMonth.setDate(1);calMonth.setHours(0,0,0,0);renderCal();};
-document.getElementById("monthMemo").onchange=(e)=>{
-  const mkey=ym(calMonth);memos.month=memos.month||{};
-  const v=bulletify(e.target.value);
-  e.target.value=v;
-  const trimmed=v.trim();
-  if(trimmed)memos.month[mkey]=v;else delete memos.month[mkey];
-  lset(K_MEMOS,memos);pushSoon();
-};
-function bulletify(text){
-  return text.split("\n").map(line=>{
-    const t=line.trim();
-    if(!t)return "";
-    return t.startsWith("・")?t:"・"+t;
-  }).filter((l,i,a)=>l!==""||i<a.length).join("\n").replace(/\n+$/,"");
+function monthTodoArr(mkey){
+  memos.monthTodo=memos.monthTodo||{};
+  // 旧・自由記述メモがあれば1回だけ引き継ぐ
+  if(!memos.monthTodo[mkey] && memos.month && memos.month[mkey]){
+    memos.monthTodo[mkey]=memos.month[mkey].split("\n").map(s=>s.replace(/^・/,"").trim()).filter(Boolean).map(t=>({text:t,done:false}));
+    delete memos.month[mkey];
+  }
+  if(!Array.isArray(memos.monthTodo[mkey]))memos.monthTodo[mkey]=[];
+  return memos.monthTodo[mkey];
 }
+function renderMonthTodo(mkey){
+  const arr=monthTodoArr(mkey);
+  const box=document.getElementById("monthTodoList");box.innerHTML="";
+  arr.forEach((t,i)=>{
+    const row=document.createElement("div");row.className="todo-row"+(t.done?" done":"");
+    row.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe"><path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">${esc(t.text)}</span><button class="rm">×</button>`;
+    const toggle=()=>{t.done=!t.done;lset(K_MEMOS,memos);pushSoon();renderMonthTodo(mkey);};
+    row.querySelector(".check").onclick=toggle;row.querySelector(".tx").onclick=toggle;
+    row.querySelector(".rm").onclick=()=>{arr.splice(i,1);lset(K_MEMOS,memos);pushSoon();renderMonthTodo(mkey);};
+    box.appendChild(row);
+  });
+}
+document.getElementById("monthTodoInput").onkeydown=(e)=>{
+  if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;monthTodoArr(ym(calMonth)).push({text:v,done:false});e.target.value="";lset(K_MEMOS,memos);pushSoon();renderMonthTodo(ym(calMonth));}
+};
 
 /* ---------- day dialog ---------- */
 const dayDlg=document.getElementById("dayDlg");
@@ -1447,6 +1458,27 @@ function applyTabNames(){
 }
 applyTabNames();
 
+const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes"];
+const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes"};
+let tabOrder=load("routine_taborder_v1",null);
+if(!Array.isArray(tabOrder)||tabOrder.length!==5){tabOrder=TAB_ORDER_DEFAULT.slice();}
+function applyTabOrder(){
+  const bar=document.querySelector(".tabbar");
+  tabOrder.forEach(key=>{const btn=document.getElementById(TAB_BTN_ID[key]);if(btn)bar.appendChild(btn);});
+}
+applyTabOrder();
+function buildTabOrder(){
+  const c=document.getElementById("tabOrderList");c.innerHTML="";
+  tabOrder.forEach((key,i)=>{
+    const nm=tabNames[key]||TAB_DEFAULTS[key];
+    const row=document.createElement("div");row.className="manage-item";
+    row.innerHTML=`<span class="mlabel">${esc(nm)}</span><button class="edit up"${i===0?" disabled style=opacity:.3":""}>▲</button><button class="edit down"${i===tabOrder.length-1?" disabled style=opacity:.3":""}>▼</button>`;
+    row.querySelector(".up").onclick=()=>{if(i>0){[tabOrder[i-1],tabOrder[i]]=[tabOrder[i],tabOrder[i-1]];lset("routine_taborder_v1",tabOrder);applyTabOrder();buildTabOrder();}};
+    row.querySelector(".down").onclick=()=>{if(i<tabOrder.length-1){[tabOrder[i+1],tabOrder[i]]=[tabOrder[i],tabOrder[i+1]];lset("routine_taborder_v1",tabOrder);applyTabOrder();buildTabOrder();}};
+    c.appendChild(row);
+  });
+}
+
 const settingsDlg=document.getElementById("settingsDlg");
 function paintThemePick(){
   document.querySelectorAll("#themePick span").forEach(s=>s.classList.toggle("on",s.dataset.th===theme));
@@ -1459,6 +1491,7 @@ document.getElementById("settingsBtn").onclick=()=>{
   document.getElementById("tn_cal").value=tabNames.cal||"";
   document.getElementById("tn_notes").value=tabNames.notes||"";
   buildPresetList();
+  buildTabOrder();
   settingsDlg.showModal();
 };
 function buildPresetList(){

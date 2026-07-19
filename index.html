@@ -1324,23 +1324,23 @@ document.getElementById("p_preset").onchange=(e)=>{
   const pr=tPresets.find(x=>x.id===v);if(!pr)return;
   document.getElementById("p_label").value=pr.name;
   document.getElementById("p_cat").value=pr.cat;
-  if(pr.start){document.getElementById("p_start").value=pr.start;const pe=document.getElementById("p_end");if(!pe.value)pe.value=pr.start;}
+  if(pr.start){document.getElementById("p_start").value=pr.start;const pe=document.getElementById("p_end");if(!pe.value)pe.value=plusOneHour(pr.start);}
 };
-// 開始を入れたら、終了が空なら同じ時刻を初期値にする（終了ピッカーが開始時刻から始まる）
-document.getElementById("p_start").onchange=(e)=>{
-  const pe=document.getElementById("p_end");
-  if(e.target.value&&!pe.value)pe.value=e.target.value;
-};
-document.getElementById("p_start").oninput=(e)=>{
-  const pe=document.getElementById("p_end");
-  if(e.target.value&&!pe.value)pe.value=e.target.value;
-};
-// 終了ピッカーを開く直前に、空なら開始時刻を入れておく（スマホで確実に効かせる）
+// 開始を入れたら、終了が空なら「開始＋1時間」を初期値に入れる
+function plusOneHour(hhmm){
+  const[h,m]=hhmm.split(":").map(Number);
+  const nh=(h+1)%24;
+  return String(nh).padStart(2,"0")+":"+String(m).padStart(2,"0");
+}
+function seedEndFromStart(){
+  const ps=document.getElementById("p_start"),pe=document.getElementById("p_end");
+  if(ps.value&&!pe.value)pe.value=plusOneHour(ps.value);
+}
+document.getElementById("p_start").onchange=seedEndFromStart;
+document.getElementById("p_start").oninput=seedEndFromStart;
+// 終了ピッカーを開く直前にも保険で入れる（スマホ対策）
 ["focus","click","mousedown","touchstart"].forEach(ev=>{
-  document.getElementById("p_end").addEventListener(ev,()=>{
-    const ps=document.getElementById("p_start"),pe=document.getElementById("p_end");
-    if(ps.value&&!pe.value)pe.value=ps.value;
-  });
+  document.getElementById("p_end").addEventListener(ev,seedEndFromStart);
 });
 document.getElementById("planAdd").onclick=()=>openPlan(null);
 document.getElementById("planSave").onclick=()=>{
@@ -1684,7 +1684,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v1.8";
+const APP_VERSION="OS v1.9";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

@@ -404,7 +404,7 @@
 </dialog>
 
 <dialog id="settingsDlg">
-  <div class="dlg-h">設定</div>
+  <div class="dlg-h">設定 <span id="verLabel" style="font-size:11px;color:var(--ink-faint);font-family:var(--mono);font-weight:400"></span></div>
   <div class="dlg-b">
     <div class="field"><label>テーマ</label>
       <div class="wd-pick" id="themePick">
@@ -1528,6 +1528,8 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
+const APP_VERSION="v1.0";
+document.getElementById("verLabel").textContent=APP_VERSION;
 render();
 pull();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull();});

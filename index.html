@@ -1361,23 +1361,27 @@ function drawCharts(d){
   const plan=d.plan.filter(p=>durMin(p)>0);
   // 24時間 時計型（開始〜終了を弧で）
   const clock=document.getElementById("clockChart");
-  let ch='<circle cx="100" cy="100" r="86" fill="none" stroke="var(--line)" stroke-width="1"/>';
-  // 3時間ごとの目盛り
-  for(let h=0;h<24;h+=3){const a=(h/24)*2*Math.PI-Math.PI/2;const x1=100+82*Math.cos(a),y1=100+82*Math.sin(a),x2=100+90*Math.cos(a),y2=100+90*Math.sin(a);ch+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--ink-faint)" stroke-width="1"/>`;}
+  let ch='<circle cx="100" cy="100" r="78" fill="none" stroke="var(--line)" stroke-width="1"/>';
+  // 3時間ごとの目盛りと数字
+  for(let h=0;h<24;h+=3){
+    const a=(h/24)*2*Math.PI-Math.PI/2;
+    const x1=100+74*Math.cos(a),y1=100+74*Math.sin(a),x2=100+82*Math.cos(a),y2=100+82*Math.sin(a);
+    ch+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--ink-faint)" stroke-width="1"/>`;
+    const lx=100+93*Math.cos(a),ly=100+93*Math.sin(a);
+    ch+=`<text x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}" text-anchor="middle" fill="var(--ink-faint)" font-size="11" font-family="monospace">${h}</text>`;
+  }
   plan.forEach(p=>{
     let a=hm2min(p.start),b=hm2min(p.end);if(a==null||b==null)return;if(b<a)b+=1440;
     const c=catOf(p.cat).color;
     ch+=arcPath(a,b,c);
   });
   ch+='<text x="100" y="105" text-anchor="middle" fill="var(--ink-dim)" font-size="12" font-family="monospace">24h</text>';
-  // 今日を見ているときだけ「現在時刻」の針を表示
+  // 今日を見ているときだけ「現在時刻」を点で表示（線は無し）
   if(iso(tCur)===iso(new Date())){
     const now=new Date();const nowMin=now.getHours()*60+now.getMinutes();
     const a=(nowMin/1440)*2*Math.PI-Math.PI/2;
-    const hx=100+88*Math.cos(a),hy=100+88*Math.sin(a);
-    ch+=`<line x1="100" y1="100" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="var(--danger)" stroke-width="2"/>`;
-    ch+=`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="3.5" fill="var(--danger)"/>`;
-    ch+='<circle cx="100" cy="100" r="2.5" fill="var(--danger)"/>';
+    const hx=100+70*Math.cos(a),hy=100+70*Math.sin(a);
+    ch+=`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="4.5" fill="var(--danger)" stroke="var(--bg)" stroke-width="1.5"/>`;
   }
   clock.innerHTML=ch;
   // 活動別合計 ドーナツ

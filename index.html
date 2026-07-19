@@ -1496,7 +1496,7 @@ function arcPath(minA,minB,color){
   const a1=(minA/1440)*2*Math.PI-Math.PI/2, a2=(minB/1440)*2*Math.PI-Math.PI/2;
   const x1=100+r*Math.cos(a1),y1=100+r*Math.sin(a1),x2=100+r*Math.cos(a2),y2=100+r*Math.sin(a2);
   const large=(minB-minA)>720?1:0;
-  return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${color}" stroke-width="16" stroke-linecap="round"/>`;
+  return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${color}" stroke-width="16" stroke-linecap="butt"/>`;
 }
 function donutArc(f1,f2,color){
   const r=70,cx=100,cy=100;
@@ -1684,7 +1684,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v1.7";
+const APP_VERSION="OS v1.8";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

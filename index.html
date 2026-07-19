@@ -156,6 +156,8 @@
   .plan-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-left-width:4px;border-radius:9px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
   .plan-row .pt{font-family:var(--mono);font-size:12px;color:var(--ink-dim);flex:none;min-width:88px}
   .plan-row .pl{flex:1;font-size:14px}
+  .plan-row .pcat{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .plan-row .pcatname{font-size:11px;font-family:var(--mono);flex:none}
   .plan-row .pcal{font-size:10px;color:var(--accent2);font-family:var(--mono);flex:none}
   .charts{display:flex;gap:10px;justify-content:center}
   .chartbox{flex:1;max-width:180px;text-align:center}
@@ -428,10 +430,14 @@
       <input id="ps_start" type="time" style="max-width:110px">
     </div>
     <div class="row2" style="margin-top:6px">
-      <select id="ps_cat">
-        <option value="sleep">睡眠</option><option value="meal">食事</option><option value="rest">休憩</option><option value="bath">風呂</option><option value="workout">ワークアウト</option><option value="work">仕事</option><option value="study">勉強</option><option value="other">その他</option>
-      </select>
+      <select id="ps_cat"></select>
       <button class="btn-primary" id="ps_add" style="flex:none">定型を追加</button>
+    </div>
+    <p class="hint" style="margin-top:14px">Todayの予定で使う「区分」を編集できます（色は自動で割り当てられます）。</p>
+    <div id="catList"></div>
+    <div class="row2" style="margin-top:8px">
+      <input id="cat_name" placeholder="区分名 例：診療">
+      <button class="btn-primary" id="cat_add" style="flex:none">区分を追加</button>
     </div>
   </div>
   <div class="dlg-f"><button class="btn-ghost" onclick="settingsDlg.close()">閉じる</button><button class="btn-primary" id="settingsSave">保存</button></div>
@@ -476,7 +482,7 @@
 <dialog id="planDlg">
   <div class="dlg-h" id="planDlgTitle">予定</div>
   <div class="dlg-b">
-    <div class="field"><label>定型から選ぶ</label>
+    <div class="field"><label>やりたいこと・定型から選ぶ</label>
       <select id="p_preset"><option value="">— 選択 —</option></select></div>
     <div class="field"><label>内容</label><input id="p_label" placeholder="例：ワークアウト"></div>
     <div class="row2">
@@ -566,7 +572,7 @@ let memos=load(K_MEMOS,{});   // {day:"2026-07-05":"...", month:"2026-07":"..."}
 let notes=load(K_NOTES,[]);   // [{id,title,body,date,cat}]
 let today=load(K_TODAY,{});   // { "2026-07-19": {todo:[{text,done}], plan:[{id,start,end,label,cat,fromCal}], reflection:"" } }
 let tCur=new Date();tCur.setHours(0,0,0,0);
-const T_CATS=[
+const T_CAT_DEFAULTS=[
   {id:"sleep",name:"睡眠",color:"#7f8cd6"},
   {id:"meal",name:"食事",color:"#e0a458"},
   {id:"rest",name:"休憩",color:"#5fb3a3"},
@@ -576,7 +582,17 @@ const T_CATS=[
   {id:"study",name:"勉強",color:"#b98cd6"},
   {id:"other",name:"その他",color:"#8aa2b2"},
 ];
-function catOf(id){return T_CATS.find(c=>c.id===id)||T_CATS[T_CATS.length-1];}
+let T_CATS=load("routine_tcats_v1",null);
+if(!Array.isArray(T_CATS)||!T_CATS.length){T_CATS=T_CAT_DEFAULTS.map(c=>({...c}));lset("routine_tcats_v1",T_CATS);}
+// 「その他」は必ず最後に1つ残す
+function ensureOther(){if(!T_CATS.some(c=>c.id==="other"))T_CATS.push({id:"other",name:"その他",color:"#8aa2b2"});}
+ensureOther();
+function catOf(id){return T_CATS.find(c=>c.id===id)||T_CATS.find(c=>c.id==="other")||T_CATS[T_CATS.length-1];}
+function fillCatSelect(sel,cur){
+  sel.innerHTML="";
+  T_CATS.forEach(c=>{const o=document.createElement("option");o.value=c.id;o.textContent=c.name;sel.appendChild(o);});
+  if(cur&&T_CATS.some(c=>c.id===cur))sel.value=cur;else sel.value="other";
+}
 const T_PRESET_DEFAULTS=[
   {name:"起床",cat:"sleep",start:"07:00"},
   {name:"朝食",cat:"meal",start:"07:30"},
@@ -654,6 +670,7 @@ async function pull(){
       if(s.memos){memos=s.memos;lset(K_MEMOS,memos);}
       if(Array.isArray(s.notes)){notes=s.notes;lset(K_NOTES,notes);}
       if(s.today){today=s.today;lset(K_TODAY,today);}
+      if(Array.isArray(s.tcats)&&s.tcats.length){T_CATS=s.tcats;ensureOther();lset("routine_tcats_v1",T_CATS);}
       if(s.wk){
         if(Array.isArray(s.wk.items)&&s.wk.items.length){wItems=s.wk.items;lset(WK_ITEMS,wItems);}
         if(s.wk.checks){wChecks=s.wk.checks;lset(WK_CHECKS,wChecks);}
@@ -683,7 +700,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -1229,7 +1246,7 @@ function tRender(){
     const c=catOf(p.cat);
     const row=document.createElement("div");row.className="plan-row";row.style.borderLeftColor=c.color;
     const time=(p.start||"--:--")+"〜"+(p.end||"--:--");
-    row.innerHTML=`<span class="pt">${esc(time)}</span><span class="pl">${esc(p.label)}</span>${p.fromCal?'<span class="pcal">cal</span>':''}`;
+    row.innerHTML=`<span class="pt">${esc(time)}</span><span class="pl"><span class="pcat" style="background:${c.color}"></span>${esc(p.label)}</span><span class="pcatname" style="color:${c.color}">${esc(c.name)}</span>${p.fromCal?'<span class="pcal">cal</span>':''}`;
     row.onclick=()=>openPlan(p);
     pl.appendChild(row);
   });
@@ -1251,7 +1268,17 @@ const planDlg=document.getElementById("planDlg");
 let editingPlanId=null;
 function fillPresetSelect(){
   const el=document.getElementById("p_preset");el.innerHTML='<option value="">— 選択 —</option>';
-  tPresets.forEach(pr=>{const o=document.createElement("option");o.value=pr.id;o.textContent=pr.name;el.appendChild(o);});
+  // やりたいこと（その日のtodo）
+  const todos=(tData(iso(tCur)).todo||[]).filter(t=>t.text);
+  if(todos.length){
+    const og=document.createElement("optgroup");og.label="やりたいこと";
+    todos.forEach((t,i)=>{const o=document.createElement("option");o.value="todo:"+i;o.textContent=t.text;og.appendChild(o);});
+    el.appendChild(og);
+  }
+  // 定型
+  const og2=document.createElement("optgroup");og2.label="定型";
+  tPresets.forEach(pr=>{const o=document.createElement("option");o.value=pr.id;o.textContent=pr.name;og2.appendChild(o);});
+  el.appendChild(og2);
 }
 function openPlan(p){
   editingPlanId=p?p.id:null;
@@ -1260,12 +1287,18 @@ function openPlan(p){
   document.getElementById("p_label").value=p?p.label:"";
   document.getElementById("p_start").value=p?(p.start||""):"";
   document.getElementById("p_end").value=p?(p.end||""):"";
-  document.getElementById("p_cat").value=p?(p.cat||"other"):"other";
+  fillCatSelect(document.getElementById("p_cat"),p?(p.cat||"other"):"other");
   document.getElementById("planDel").style.display=p?"inline-block":"none";
   planDlg.showModal();
 }
 document.getElementById("p_preset").onchange=(e)=>{
-  const pr=tPresets.find(x=>x.id===e.target.value);if(!pr)return;
+  const v=e.target.value;
+  if(v.startsWith("todo:")){
+    const idx=+v.slice(5);const t=(tData(iso(tCur)).todo||[])[idx];
+    if(t){document.getElementById("p_label").value=t.text;}
+    return;
+  }
+  const pr=tPresets.find(x=>x.id===v);if(!pr)return;
   document.getElementById("p_label").value=pr.name;
   document.getElementById("p_cat").value=pr.cat;
   if(pr.start)document.getElementById("p_start").value=pr.start;
@@ -1508,7 +1541,51 @@ document.getElementById("settingsBtn").onclick=()=>{
   document.getElementById("tn_notes").value=tabNames.notes||"";
   buildPresetList();
   buildTabOrder();
+  buildCatList();
+  fillCatSelect(document.getElementById("ps_cat"),"other");
   settingsDlg.showModal();
+};
+const CAT_COLORS=["#7f8cd6","#e0a458","#5fb3a3","#5fb3d6","#e2523a","#6bbf78","#b98cd6","#d4795f","#c9a14a","#7cc4b0","#d68fb0","#9ab86a","#c0985f","#e2823a"];
+function nextCatColor(){const used=new Set(T_CATS.map(c=>c.color));return CAT_COLORS.find(c=>!used.has(c))||CAT_COLORS[T_CATS.length%CAT_COLORS.length];}
+function buildCatList(){
+  const c=document.getElementById("catList");c.innerHTML="";
+  T_CATS.forEach(cat=>{
+    const isOther=(cat.id==="other");
+    const row=document.createElement("div");row.className="manage-item";
+    if(isOther){
+      row.innerHTML=`<span class="gdot" style="background:${cat.color};width:11px;height:11px;border-radius:2px"></span><span class="mlabel">${esc(cat.name)}</span><span class="mmeta">既定</span>`;
+    }else{
+      row.innerHTML=`<span class="gdot" style="background:${cat.color};width:11px;height:11px;border-radius:2px"></span>
+        <input class="gname-in" value="${esc(cat.name)}" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:7px 9px;border-radius:7px;font-size:14px">
+        <button class="edit gsave">保存</button><button class="del">×</button>`;
+      const input=row.querySelector(".gname-in");
+      row.querySelector(".gsave").onclick=()=>{
+        const nm=input.value.trim();if(!nm){alert("区分名を入力してください");return;}
+        if(T_CATS.some(x=>x.id!==cat.id&&x.name===nm)){alert("同じ名前の区分があります");return;}
+        cat.name=nm;lset("routine_tcats_v1",T_CATS);buildCatList();fillCatSelect(document.getElementById("ps_cat"),"other");
+        if(document.getElementById("viewToday").style.display!=="none")tRender();
+        pushSoon();
+      };
+      row.querySelector(".del").onclick=()=>{
+        const used=Object.values(today).some(d=>(d.plan||[]).some(p=>p.cat===cat.id));
+        if(used&&!confirm(`「${cat.name}」を使っている予定があります。削除すると、それらは「その他」になります。削除しますか？`))return;
+        T_CATS=T_CATS.filter(x=>x.id!==cat.id);ensureOther();lset("routine_tcats_v1",T_CATS);buildCatList();fillCatSelect(document.getElementById("ps_cat"),"other");pushSoon();
+      };
+    }
+    c.appendChild(row);
+  });
+}
+document.getElementById("cat_add").onclick=()=>{
+  const name=document.getElementById("cat_name").value.trim();
+  if(!name){alert("区分名を入力してください");return;}
+  if(T_CATS.some(c=>c.name===name)){alert("同じ名前の区分があります");return;}
+  const other=T_CATS.find(c=>c.id==="other");
+  const rest=T_CATS.filter(c=>c.id!=="other");
+  rest.push({id:"c"+Date.now().toString(36),name,color:nextCatColor()});
+  T_CATS=other?rest.concat([other]):rest;   // その他は末尾に維持
+  lset("routine_tcats_v1",T_CATS);
+  document.getElementById("cat_name").value="";
+  buildCatList();fillCatSelect(document.getElementById("ps_cat"),"other");pushSoon();
 };
 function buildPresetList(){
   const c=document.getElementById("presetList");c.innerHTML="";
@@ -1544,7 +1621,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v1.0";
+const APP_VERSION="OS v1.3";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

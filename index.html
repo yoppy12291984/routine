@@ -23,11 +23,12 @@
   html[data-theme="light"]{color-scheme:light}
   body{max-width:760px;margin:0 auto;padding:18px 14px 90px}
 
-  .syncbar{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;
-    color:var(--ink-faint);margin-bottom:14px;min-height:18px}
-  .syncdot{width:7px;height:7px;border-radius:50%;background:var(--ink-faint);flex:none}
+  .syncbar{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:13px;
+    color:var(--ink-faint);margin-bottom:14px;min-height:22px}
+  .syncdot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);flex:none}
   .syncdot.ok{background:var(--accent2)}.syncdot.err{background:var(--danger)}.syncdot.busy{background:var(--accent)}
   .syncbar .cfg{margin-left:auto;color:var(--ink-dim);cursor:pointer;text-decoration:underline}
+  .syncbar .ver{color:var(--ink-faint);font-size:12px}
 
   .top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px}
   .datewrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
@@ -179,8 +180,9 @@
 <div class="syncbar">
   <span class="syncdot" id="syncdot"></span>
   <span id="syncmsg">未接続</span>
-  <span class="cfg" id="themeToggle" style="margin-left:auto;margin-right:12px;text-decoration:none;font-size:14px">◐</span>
-  <span class="cfg" id="settingsBtn" style="margin-right:12px;text-decoration:none;font-size:15px">⚙</span>
+  <span class="ver" id="verBar" style="margin-left:auto"></span>
+  <span class="cfg" id="themeToggle" style="margin-left:14px;margin-right:13px;text-decoration:none;font-size:17px">◐</span>
+  <span class="cfg" id="settingsBtn" style="margin-right:13px;text-decoration:none;font-size:18px">⚙</span>
   <span class="cfg" id="cfgLink">同期設定</span>
 </div>
 
@@ -1539,6 +1541,7 @@ document.getElementById("settingsSave").onclick=()=>{
 /* ---------- boot ---------- */
 const APP_VERSION="OS v1.0";
 document.getElementById("verLabel").textContent=APP_VERSION;
+document.getElementById("verBar").textContent=APP_VERSION;
 render();
 pull();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)pull();});

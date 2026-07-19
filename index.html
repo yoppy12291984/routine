@@ -218,7 +218,7 @@
       style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:14px;font-family:var(--sans);resize:vertical"></textarea>
   </div>
   <div class="calgrid-wrap">
-    <div class="caldow"><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="sat">土</span><span class="sun">日</span></div>
+    <div class="caldow"><span class="sun">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="sat">土</span></div>
     <div class="calgrid" id="calGrid"></div>
   </div>
 </div>
@@ -800,8 +800,8 @@ function renderCal(){
   const grid=document.getElementById("calGrid");grid.innerHTML="";
   const y=calMonth.getFullYear(),m=calMonth.getMonth();
   const first=new Date(y,m,1);
-  // 月曜始まり：JSのgetDay()は日=0。月曜=0になるよう変換
-  let lead=(first.getDay()+6)%7;
+  // 日曜始まり：JSのgetDay()は日=0なのでそのまま使える
+  let lead=first.getDay();
   const daysInMonth=new Date(y,m+1,0).getDate();
   const todayIso=iso(new Date());
   for(let i=0;i<lead;i++){const c=document.createElement("div");c.className="calcell blank";grid.appendChild(c);}

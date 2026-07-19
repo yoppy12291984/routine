@@ -179,8 +179,10 @@
   .pick-row .tx{flex:1;font-size:14px}
   .reminders .tsec-h{display:flex;align-items:center}
   .mini-edit{margin-left:auto;background:none;border:1px solid var(--line);color:var(--ink-dim);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:var(--sans);font-weight:400;text-transform:none;letter-spacing:0}
-  .rem-item{display:flex;gap:9px;padding:6px 2px;font-size:14px;line-height:1.5;color:var(--ink)}
+  .rem-item{display:flex;align-items:center;gap:9px;padding:6px 2px;font-size:14px;line-height:1.5;color:var(--ink)}
   .rem-item .bullet{color:var(--accent);flex:none}
+  .rem-item .rtx{flex:1}
+  .rem-item .rm{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
   .rem-empty{color:var(--ink-faint);font-size:13px;padding:8px 2px}
   .tabview{margin:0 -14px;padding:14px 14px 8px;border-radius:14px}
   .vw-training{background:#181210}
@@ -297,8 +299,9 @@
   </div>
 
   <div class="tsection reminders">
-    <div class="tsec-h">心がけ <button class="mini-edit" id="remEdit">編集</button></div>
+    <div class="tsec-h">心がけ</div>
     <div id="remList"></div>
+    <div class="todo-add"><input id="remInput" placeholder="心がけを入力してEnter"></div>
   </div>
 
   <div class="tsection">
@@ -496,16 +499,6 @@
     <button class="btn-ghost" id="importAppend">追加で取込</button>
     <button class="btn-primary" id="importReplace">上書き取込</button>
   </div>
-</dialog>
-
-<dialog id="remDlg">
-  <div class="dlg-h">心がけを編集</div>
-  <div class="dlg-b">
-    <p class="hint">1行に1つずつ書いてください。ここに書いたものが毎日表示されます。</p>
-    <textarea id="remText" rows="8" placeholder="例：&#10;疲れたら音楽を聴く&#10;22時以降はブルーライトカット"
-      style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:14px;font-family:var(--sans);resize:vertical"></textarea>
-  </div>
-  <div class="dlg-f"><button class="btn-ghost" onclick="remDlg.close()">キャンセル</button><button class="btn-primary" id="remSave">保存</button></div>
 </dialog>
 
 <dialog id="pickDlg">
@@ -1294,21 +1287,16 @@ function tRender(){
 }
 function renderReminders(){
   const box=document.getElementById("remList");if(!box)return;box.innerHTML="";
-  if(!reminders.length){box.innerHTML='<div class="rem-empty">「編集」から、毎日忘れたくないことを書けます。</div>';return;}
-  reminders.forEach(t=>{
+  if(!reminders.length){box.innerHTML='<div class="rem-empty">下の欄に入力してEnterで、毎日忘れたくないことを追加できます。</div>';}
+  reminders.forEach((t,i)=>{
     const row=document.createElement("div");row.className="rem-item";
-    row.innerHTML=`<span class="bullet">・</span><span>${esc(t)}</span>`;
+    row.innerHTML=`<span class="bullet">・</span><span class="rtx">${esc(t)}</span><button class="rm">×</button>`;
+    row.querySelector(".rm").onclick=()=>{reminders.splice(i,1);lset(K_REMIND,reminders);renderReminders();pushSoon();};
     box.appendChild(row);
   });
 }
-const remDlg=document.getElementById("remDlg");
-document.getElementById("remEdit").onclick=()=>{
-  document.getElementById("remText").value=reminders.join("\n");
-  remDlg.showModal();
-};
-document.getElementById("remSave").onclick=()=>{
-  reminders=document.getElementById("remText").value.split("\n").map(s=>s.trim()).filter(Boolean);
-  lset(K_REMIND,reminders);remDlg.close();renderReminders();pushSoon();
+document.getElementById("remInput").onkeydown=e=>{
+  if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;reminders.push(v);e.target.value="";lset(K_REMIND,reminders);renderReminders();pushSoon();}
 };
 document.getElementById("tPrev").onclick=()=>{tCur.setDate(tCur.getDate()-1);tRender();};
 document.getElementById("tNext").onclick=()=>{tCur.setDate(tCur.getDate()+1);tRender();};
@@ -1725,7 +1713,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.0";
+const APP_VERSION="OS v2.1";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

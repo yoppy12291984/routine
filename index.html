@@ -264,7 +264,8 @@
     <div class="tsec-h">1日の予定表</div>
     <div class="plan-tools">
       <button class="btn-ghost" id="planFromCal">カレンダー取込</button>
-      <button class="btn-ghost" id="planFromRoutine">区分を追加</button>
+      <button class="btn-ghost" id="planFromRoutine">ルーチン取込</button>
+      <button class="btn-ghost" id="planImport">AI取込</button>
       <button class="btn-primary" id="planAdd">＋ 予定</button>
     </div>
     <div id="planList"></div>
@@ -416,6 +417,18 @@
     <div class="field"><label>タブ2（トレーニング）</label><input id="tn_workout" placeholder="Training"></div>
     <div class="field"><label>タブ3（カレンダー）</label><input id="tn_cal" placeholder="Calendar"></div>
     <div class="field"><label>タブ4（メモ）</label><input id="tn_notes" placeholder="Notes"></div>
+    <p class="hint" style="margin-top:14px">Todayの予定で使う「定型」を編集できます（起床・就寝・食事など）。</p>
+    <div id="presetList"></div>
+    <div class="row2" style="margin-top:8px">
+      <input id="ps_name" placeholder="名前 例：起床">
+      <input id="ps_start" type="time" style="max-width:110px">
+    </div>
+    <div class="row2" style="margin-top:6px">
+      <select id="ps_cat">
+        <option value="sleep">睡眠</option><option value="meal">食事</option><option value="rest">休憩</option><option value="bath">風呂</option><option value="workout">ワークアウト</option><option value="work">仕事</option><option value="study">勉強</option><option value="other">その他</option>
+      </select>
+      <button class="btn-primary" id="ps_add" style="flex:none">定型を追加</button>
+    </div>
   </div>
   <div class="dlg-f"><button class="btn-ghost" onclick="settingsDlg.close()">閉じる</button><button class="btn-primary" id="settingsSave">保存</button></div>
 </dialog>
@@ -441,9 +454,26 @@
   <div class="dlg-f"><button class="btn-ghost" id="dayGoto">この日を開く</button><button class="btn-primary" id="dayClose">閉じる</button></div>
 </dialog>
 
+<dialog id="importDlg">
+  <div class="dlg-h">AIから取り込み</div>
+  <div class="dlg-b">
+    <p class="hint">Claudeに今日の予定を話して出力されたコード（JSON）を、下に貼り付けてください。取り込み先の日付：<b id="importDate"></b></p>
+    <textarea id="importText" rows="8" placeholder='{"todo":[...],"plan":[...]} を貼り付け'
+      style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:13px;font-family:var(--mono);resize:vertical"></textarea>
+    <p class="hint" id="importStatus"></p>
+  </div>
+  <div class="dlg-f">
+    <button class="btn-ghost" onclick="importDlg.close()">キャンセル</button>
+    <button class="btn-ghost" id="importAppend">追加で取込</button>
+    <button class="btn-primary" id="importReplace">上書き取込</button>
+  </div>
+</dialog>
+
 <dialog id="planDlg">
   <div class="dlg-h" id="planDlgTitle">予定</div>
   <div class="dlg-b">
+    <div class="field"><label>定型から選ぶ</label>
+      <select id="p_preset"><option value="">— 選択 —</option></select></div>
     <div class="field"><label>内容</label><input id="p_label" placeholder="例：ワークアウト"></div>
     <div class="row2">
       <div class="field"><label>開始</label><input id="p_start" type="time"></div>
@@ -543,6 +573,18 @@ const T_CATS=[
   {id:"other",name:"その他",color:"#8aa2b2"},
 ];
 function catOf(id){return T_CATS.find(c=>c.id===id)||T_CATS[T_CATS.length-1];}
+const T_PRESET_DEFAULTS=[
+  {name:"起床",cat:"sleep",start:"07:00"},
+  {name:"朝食",cat:"meal",start:"07:30"},
+  {name:"昼食",cat:"meal",start:"12:00"},
+  {name:"夕食",cat:"meal",start:"19:00"},
+  {name:"休憩",cat:"rest",start:"15:00"},
+  {name:"風呂",cat:"bath",start:"21:00"},
+  {name:"ワークアウト",cat:"workout",start:"18:00"},
+  {name:"就寝",cat:"sleep",start:"23:00"},
+];
+let tPresets=load("routine_tpresets_v1",null);
+if(!tPresets){tPresets=T_PRESET_DEFAULTS.map(p=>({id:"pr"+Math.random().toString(36).slice(2,7),...p}));lset("routine_tpresets_v1",tPresets);}
 let noteView=load("routine_noteview_v1","card");   // card | table
 let calMonth=new Date();calMonth.setDate(1);calMonth.setHours(0,0,0,0);
 
@@ -1194,9 +1236,14 @@ document.getElementById("tReflection").onchange=e=>{tData(iso(tCur)).reflection=
 /* plan add/edit */
 const planDlg=document.getElementById("planDlg");
 let editingPlanId=null;
+function fillPresetSelect(){
+  const el=document.getElementById("p_preset");el.innerHTML='<option value="">— 選択 —</option>';
+  tPresets.forEach(pr=>{const o=document.createElement("option");o.value=pr.id;o.textContent=pr.name;el.appendChild(o);});
+}
 function openPlan(p){
   editingPlanId=p?p.id:null;
   document.getElementById("planDlgTitle").textContent=p?"予定を編集":"予定を追加";
+  fillPresetSelect();document.getElementById("p_preset").value="";
   document.getElementById("p_label").value=p?p.label:"";
   document.getElementById("p_start").value=p?(p.start||""):"";
   document.getElementById("p_end").value=p?(p.end||""):"";
@@ -1204,6 +1251,12 @@ function openPlan(p){
   document.getElementById("planDel").style.display=p?"inline-block":"none";
   planDlg.showModal();
 }
+document.getElementById("p_preset").onchange=(e)=>{
+  const pr=tPresets.find(x=>x.id===e.target.value);if(!pr)return;
+  document.getElementById("p_label").value=pr.name;
+  document.getElementById("p_cat").value=pr.cat;
+  if(pr.start)document.getElementById("p_start").value=pr.start;
+};
 document.getElementById("planAdd").onclick=()=>openPlan(null);
 document.getElementById("planSave").onclick=()=>{
   const label=document.getElementById("p_label").value.trim();
@@ -1218,12 +1271,18 @@ document.getElementById("planDel").onclick=()=>{
   if(!editingPlanId)return;const d=tData(iso(tCur));
   d.plan=d.plan.filter(x=>x.id!==editingPlanId);tSave();planDlg.close();editingPlanId=null;tRender();
 };
-/* 区分を追加：よく使う区分をワンタップで枠だけ足す */
+/* ルーチン取込：その日に出るルーチン項目から選んで予定表に入れる */
 document.getElementById("planFromRoutine").onclick=()=>{
-  const d=tData(iso(tCur));
-  const presets=[["起床","sleep","07:00","07:00"],["朝食","meal","07:30","08:00"],["昼食","meal","12:00","13:00"],["夕食","meal","19:00","20:00"],["風呂","bath","21:00","21:30"],["ワークアウト","workout","18:00","19:00"],["休憩","rest","15:00","15:30"],["就寝","sleep","23:00","23:00"]];
-  presets.forEach(([label,cat,s,e])=>{d.plan.push({id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label,cat,start:s,end:e});});
-  tSave();tRender();alert("よく使う区分を追加しました。時間を調整してください。");
+  const due=allItems().filter(it=>dueToday(it,tCur)&&!it.cal);
+  if(!due.length){alert("この日のルーチン項目はありません。");return;}
+  const list=due.map((it,i)=>`${i+1}. ${it.label}`).join("\n");
+  const ans=prompt("取り込む項目の番号をカンマ区切りで入力してください（例：1,3,5）。\n\n"+list);
+  if(ans===null)return;
+  const nums=ans.split(/[,\s]+/).map(n=>parseInt(n,10)).filter(n=>n>=1&&n<=due.length);
+  if(!nums.length){alert("番号が読み取れませんでした。");return;}
+  const d=tData(iso(tCur));let added=0;
+  nums.forEach(n=>{const it=due[n-1];d.plan.push({id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label:it.label,cat:"other",start:"",end:"",fromRoutine:true});added++;});
+  tSave();tRender();alert(added+"件を取り込みました。時間と区分を設定してください。");
 };
 /* カレンダー取込：その日のカレンダー予定を予定表に入れる（消せる） */
 document.getElementById("planFromCal").onclick=()=>{
@@ -1240,6 +1299,48 @@ document.getElementById("planFromCal").onclick=()=>{
   });
   tSave();tRender();
   alert(added?added+"件のカレンダー予定を取り込みました（不要なら各予定をタップして削除できます）。":"すでに取り込み済みです。");
+};
+
+/* AI取込：Claudeが出力したJSONを貼り付けて取り込む */
+const importDlg=document.getElementById("importDlg");
+document.getElementById("planImport").onclick=()=>{
+  document.getElementById("importDate").textContent=iso(tCur);
+  document.getElementById("importText").value="";
+  document.getElementById("importStatus").textContent="";
+  importDlg.showModal();
+};
+function parseImport(){
+  let raw=document.getElementById("importText").value.trim();
+  if(!raw){document.getElementById("importStatus").textContent="貼り付けが空です。";return null;}
+  // ```json ... ``` のコードフェンスを除去
+  raw=raw.replace(/^```(json)?/i,"").replace(/```$/,"").trim();
+  let obj;
+  try{obj=JSON.parse(raw);}catch(e){document.getElementById("importStatus").textContent="JSONの形式が正しくありません。Claudeの出力をそのまま貼り付けてください。";return null;}
+  const validCats=T_CATS.map(c=>c.id);
+  const todo=Array.isArray(obj.todo)?obj.todo.map(t=>{
+    if(typeof t==="string")return{text:t,done:false};
+    return{text:String(t.text||t.label||""),done:!!t.done};
+  }).filter(t=>t.text):[];
+  const plan=Array.isArray(obj.plan)?obj.plan.map(p=>({
+    id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    label:String(p.label||p.name||""),
+    start:/^\d\d?:\d\d$/.test(p.start||"")?p.start.padStart(5,"0"):"",
+    end:/^\d\d?:\d\d$/.test(p.end||"")?p.end.padStart(5,"0"):"",
+    cat:validCats.includes(p.cat)?p.cat:"other",
+  })).filter(p=>p.label):[];
+  return {todo,plan,reflection:typeof obj.reflection==="string"?obj.reflection:""};
+}
+function applyImport(mode){
+  const parsed=parseImport();if(!parsed)return;
+  const d=tData(iso(tCur));
+  if(mode==="replace"){d.todo=parsed.todo;d.plan=parsed.plan;if(parsed.reflection)d.reflection=parsed.reflection;}
+  else{d.todo=d.todo.concat(parsed.todo);d.plan=d.plan.concat(parsed.plan);}
+  tSave();importDlg.close();tRender();
+  alert(`取り込みました（やりたいこと ${parsed.todo.length}件 / 予定 ${parsed.plan.length}件）。`);
+}
+document.getElementById("importAppend").onclick=()=>applyImport("append");
+document.getElementById("importReplace").onclick=()=>{
+  if(confirm("この日のやりたいこと・予定表を、貼り付けた内容で上書きします。よろしいですか？"))applyImport("replace");
 };
 
 /* charts */
@@ -1357,7 +1458,26 @@ document.getElementById("settingsBtn").onclick=()=>{
   document.getElementById("tn_workout").value=tabNames.workout||"";
   document.getElementById("tn_cal").value=tabNames.cal||"";
   document.getElementById("tn_notes").value=tabNames.notes||"";
+  buildPresetList();
   settingsDlg.showModal();
+};
+function buildPresetList(){
+  const c=document.getElementById("presetList");c.innerHTML="";
+  tPresets.forEach(pr=>{
+    const cat=catOf(pr.cat);
+    const row=document.createElement("div");row.className="manage-item";
+    row.innerHTML=`<span class="gdot" style="background:${cat.color};width:10px;height:10px;border-radius:2px"></span><span class="mlabel">${esc(pr.name)}</span><span class="mmeta">${cat.name}${pr.start?" "+pr.start:""}</span><button class="del">×</button>`;
+    row.querySelector(".del").onclick=()=>{tPresets=tPresets.filter(x=>x.id!==pr.id);lset("routine_tpresets_v1",tPresets);buildPresetList();};
+    c.appendChild(row);
+  });
+}
+document.getElementById("ps_add").onclick=()=>{
+  const name=document.getElementById("ps_name").value.trim();
+  if(!name){alert("定型の名前を入力してください");return;}
+  tPresets.push({id:"pr"+Date.now().toString(36),name,cat:document.getElementById("ps_cat").value,start:document.getElementById("ps_start").value});
+  lset("routine_tpresets_v1",tPresets);
+  document.getElementById("ps_name").value="";document.getElementById("ps_start").value="";
+  buildPresetList();
 };
 document.querySelectorAll("#themePick span").forEach(s=>{
   s.onclick=()=>setTheme(s.dataset.th);

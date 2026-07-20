@@ -211,6 +211,7 @@
   <button class="tab" id="tabWorkout">Training</button>
   <button class="tab" id="tabCal">Calendar</button>
   <button class="tab" id="tabNotes">Notes</button>
+  <button class="tab" id="tabInvest">Investment</button>
 </div>
 
 <div id="viewCheck">
@@ -387,6 +388,34 @@
   <div id="notesBox"></div>
 </div>
 
+<div id="viewInvest" style="display:none">
+  <div class="tsection">
+    <div class="tsec-h">投資のやること <span id="invWd" class="hint" style="font-weight:400;text-transform:none;letter-spacing:0;margin:0"></span></div>
+    <div id="invList"></div>
+    <div class="plan-tools" style="margin-top:8px">
+      <button class="btn-primary" id="invAdd">＋ やること</button>
+      <button class="btn-ghost" id="invManage">すべて管理</button>
+    </div>
+  </div>
+</div>
+
+<dialog id="invDlg">
+  <div class="dlg-h" id="invDlgTitle">やることを追加</div>
+  <div class="dlg-b">
+    <div class="field"><label>やること</label><input id="iv_label" placeholder="例：ブレイクアウトした銘柄を探す"></div>
+    <div class="field"><label>頻度</label>
+      <select id="iv_freq"><option value="everyday">毎日</option><option value="weekly">曜日を指定</option></select></div>
+    <div class="field" id="iv_wdField" style="display:none"><label>曜日（複数可）</label><div class="wd-pick" id="iv_wdPick"></div></div>
+  </div>
+  <div class="dlg-f"><button class="btn-ghost" id="invDel" style="color:var(--danger);border-color:var(--danger)">削除</button><button class="btn-ghost" onclick="invDlg.close()">キャンセル</button><button class="btn-primary" id="invSave">保存</button></div>
+</dialog>
+
+<dialog id="invManageDlg">
+  <div class="dlg-h">投資のやること・すべて</div>
+  <div class="dlg-b"><div id="invManageList"></div></div>
+  <div class="dlg-f"><button class="btn-primary" onclick="invManageDlg.close()">閉じる</button></div>
+</dialog>
+
 <dialog id="addDlg">
   <div class="dlg-h" id="addDlgTitle">項目を追加</div>
   <div class="dlg-b">
@@ -448,6 +477,7 @@
     <div class="field"><label>タブ2（トレーニング）</label><input id="tn_workout" placeholder="Training"></div>
     <div class="field"><label>タブ3（カレンダー）</label><input id="tn_cal" placeholder="Calendar"></div>
     <div class="field"><label>タブ4（メモ）</label><input id="tn_notes" placeholder="Notes"></div>
+    <div class="field"><label>タブ（Investment）</label><input id="tn_invest" placeholder="Investment"></div>
     <p class="hint" style="margin-top:14px">タブの並び順を変更できます（▲▼で移動）。</p>
     <div id="tabOrderList"></div>
     <p class="hint" style="margin-top:14px">Todayの予定で使う「定型」を編集できます（起床・就寝・食事など）。</p>
@@ -629,6 +659,11 @@ let notes=load(K_NOTES,[]);   // [{id,title,body,date,cat}]
 let today=load(K_TODAY,{});   // { "2026-07-19": {todo:[{text,done}], plan:[{id,start,end,label,cat,fromCal}], reflection:"" } }
 let reminders=load(K_REMIND,[]);   // 毎日出る「心がけ」（文字列の配列）
 let dayDefaults=load(K_DAYDEF,[]);   // 曜日別デフォルト予定 [{id,days:[1..5],label,start,end,cat}]
+const K_INV="routine_invest_v1",K_INVCHK="routine_invest_checks_v1";
+let invItems=load(K_INV,[]);   // [{id,label,freq:"everyday"|"weekly",days:[],memo}]
+let invChecks=load(K_INVCHK,{});   // {date:{id:true}}
+let invCur=new Date();invCur.setHours(0,0,0,0);
+const invOpen=new Set();
 let tCur=new Date();tCur.setHours(0,0,0,0);
 const todoOpen=new Set();   // 展開中のやりたいこと（そのセッション内）
 const T_CAT_DEFAULTS=[
@@ -731,6 +766,8 @@ async function pull(){
       if(s.today){today=s.today;lset(K_TODAY,today);}
       if(Array.isArray(s.reminders)){reminders=s.reminders;lset(K_REMIND,reminders);}
       if(Array.isArray(s.daydef)){dayDefaults=s.daydef;lset(K_DAYDEF,dayDefaults);}
+      if(Array.isArray(s.inv)){invItems=s.inv;lset(K_INV,invItems);}
+      if(s.invchk){invChecks=s.invchk;lset(K_INVCHK,invChecks);}
       if(Array.isArray(s.tcats)&&s.tcats.length){T_CATS=s.tcats;ensureOther();lset("routine_tcats_v1",T_CATS);}
       if(s.wk){
         if(Array.isArray(s.wk.items)&&s.wk.items.length){wItems=s.wk.items;lset(WK_ITEMS,wItems);}
@@ -745,6 +782,7 @@ async function pull(){
       if(viewWorkout.style.display!=="none")wRender();
       if(document.getElementById("viewNotes").style.display!=="none")renderNotes();
       if(document.getElementById("viewToday").style.display!=="none")tRender();
+      if(document.getElementById("viewInvest").style.display!=="none")invRender();
     }else{setSync("err","応答エラー");}
   }catch(e){setSync("err","オフライン（ローカルに保存中）");}
 }
@@ -761,7 +799,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -1014,26 +1052,30 @@ document.getElementById("g_add").onclick=()=>{
 const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElementById("viewCal");
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
-  const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday");
+  const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday"),vi=document.getElementById("viewInvest");
   viewCheck.style.display=which==="check"?"block":"none";
   vw.style.display=which==="workout"?"block":"none";
   viewCal.style.display=which==="cal"?"block":"none";
   vn.style.display=which==="notes"?"block":"none";
   vt.style.display=which==="today"?"block":"none";
+  vi.style.display=which==="invest"?"block":"none";
   tabCheck.classList.toggle("on",which==="check");
   document.getElementById("tabToday").classList.toggle("on",which==="today");
   document.getElementById("tabWorkout").classList.toggle("on",which==="workout");
   tabCal.classList.toggle("on",which==="cal");
   document.getElementById("tabNotes").classList.toggle("on",which==="notes");
+  document.getElementById("tabInvest").classList.toggle("on",which==="invest");
   if(which==="cal")renderCal();
   if(which==="workout")wRender();
   if(which==="notes")renderNotes();
   if(which==="today")tRender();
+  if(which==="invest")invRender();
 }
 tabCheck.onclick=()=>showTab("check");
 tabCal.onclick=()=>showTab("cal");
 document.getElementById("tabWorkout").onclick=()=>showTab("workout");
 document.getElementById("tabNotes").onclick=()=>showTab("notes");
+document.getElementById("tabInvest").onclick=()=>showTab("invest");
 document.getElementById("tabToday").onclick=()=>showTab("today");
 
 function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -1644,6 +1686,85 @@ function renderMonthSummary(){
   }).join("");
 }
 
+/* ---------- Investment tab ---------- */
+function invDue(it,d){
+  if(it.freq==="everyday")return true;
+  if(it.freq==="weekly")return (it.days||[]).includes(d.getDay());
+  return true;
+}
+function invRender(){
+  const key=iso(invCur);
+  const names=["日","月","火","水","木","金","土"];
+  document.getElementById("invWd").textContent=`${invCur.getMonth()+1}/${invCur.getDate()}（${names[invCur.getDay()]}）`;
+  const box=document.getElementById("invList");box.innerHTML="";
+  const due=invItems.filter(it=>invDue(it,invCur));
+  if(!due.length){box.innerHTML='<div class="notes-empty">「＋ やること」から追加できます（毎日／曜日指定）。</div>';return;}
+  const dayChk=invChecks[key]||{};
+  due.forEach(it=>{
+    const done=!!dayChk[it.id];
+    const row=document.createElement("div");row.className="todo-row"+(done?" done":"");
+    row.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe"><path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">${esc(it.label)}</span><button class="rm" title="編集">⋯</button>`;
+    row.querySelector(".check").onclick=(e)=>{e.stopPropagation();if(!invChecks[key])invChecks[key]={};if(invChecks[key][it.id])delete invChecks[key][it.id];else invChecks[key][it.id]=true;if(!Object.keys(invChecks[key]).length)delete invChecks[key];lset(K_INVCHK,invChecks);invRender();pushSoon();};
+    row.querySelector(".tx").onclick=()=>{if(invOpen.has(it.id))invOpen.delete(it.id);else invOpen.add(it.id);invRender();};
+    row.querySelector(".rm").onclick=(e)=>{e.stopPropagation();openInv(it);};
+    box.appendChild(row);
+    if(invOpen.has(it.id)){
+      const md=document.createElement("div");md.className="todo-memo";
+      const ta=document.createElement("textarea");ta.rows=3;ta.value=it.memo||"";ta.placeholder="メモ（見つけた銘柄、気づきなど）";
+      ta.onchange=()=>{it.memo=ta.value;lset(K_INV,invItems);pushSoon();};
+      md.appendChild(ta);box.appendChild(md);
+    }
+  });
+}
+const invDlg=document.getElementById("invDlg");
+let editingInvId=null;
+function invBuildWd(){const p=document.getElementById("iv_wdPick");p.innerHTML="";[1,2,3,4,5,6,0].forEach(w=>{const s=document.createElement("span");s.textContent=WD[w];s.dataset.w=w;s.onclick=()=>s.classList.toggle("on");p.appendChild(s);});}
+function openInv(it){
+  editingInvId=it?it.id:null;
+  document.getElementById("invDlgTitle").textContent=it?"やることを編集":"やることを追加";
+  document.getElementById("iv_label").value=it?it.label:"";
+  document.getElementById("iv_freq").value=it?(it.freq||"everyday"):"everyday";
+  invBuildWd();
+  if(it&&it.freq==="weekly")document.querySelectorAll("#iv_wdPick span").forEach(s=>{if((it.days||[]).includes(+s.dataset.w))s.classList.add("on");});
+  document.getElementById("iv_wdField").style.display=(document.getElementById("iv_freq").value==="weekly")?"block":"none";
+  document.getElementById("invDel").style.display=it?"inline-block":"none";
+  invDlg.showModal();
+}
+document.getElementById("iv_freq").onchange=(e)=>{document.getElementById("iv_wdField").style.display=(e.target.value==="weekly")?"block":"none";};
+document.getElementById("invAdd").onclick=()=>openInv(null);
+document.getElementById("invSave").onclick=()=>{
+  const label=document.getElementById("iv_label").value.trim();
+  if(!label){alert("やることを入力してください");return;}
+  const freq=document.getElementById("iv_freq").value;
+  const days=freq==="weekly"?[...document.querySelectorAll("#iv_wdPick .on")].map(s=>+s.dataset.w):[];
+  if(freq==="weekly"&&!days.length){alert("曜日を選んでください");return;}
+  if(editingInvId){const it=invItems.find(x=>x.id===editingInvId);if(it){it.label=label;it.freq=freq;it.days=days;}}
+  else{invItems.push({id:"iv"+Date.now().toString(36),label,freq,days,memo:""});}
+  lset(K_INV,invItems);invDlg.close();editingInvId=null;invRender();pushSoon();
+  if(invManageDlg.open)invBuildManage();
+};
+document.getElementById("invDel").onclick=()=>{
+  if(!editingInvId)return;
+  if(!confirm("このやることを削除しますか？"))return;
+  invItems=invItems.filter(x=>x.id!==editingInvId);lset(K_INV,invItems);invDlg.close();editingInvId=null;invRender();pushSoon();
+  if(invManageDlg.open)invBuildManage();
+};
+const invManageDlg=document.getElementById("invManageDlg");
+document.getElementById("invManage").onclick=()=>{invBuildManage();invManageDlg.showModal();};
+function invBuildManage(){
+  const c=document.getElementById("invManageList");c.innerHTML="";
+  if(!invItems.length){c.innerHTML='<div class="notes-empty">まだありません。</div>';return;}
+  const names=["日","月","火","水","木","金","土"];
+  invItems.forEach(it=>{
+    const meta=it.freq==="everyday"?"毎日":[1,2,3,4,5,6,0].filter(w=>(it.days||[]).includes(w)).map(w=>names[w]).join("");
+    const row=document.createElement("div");row.className="manage-item";
+    row.innerHTML=`<span class="mlabel">${esc(it.label)}</span><span class="mmeta">${meta}</span><button class="edit">編集</button><button class="del">×</button>`;
+    row.querySelector(".edit").onclick=()=>openInv(it);
+    row.querySelector(".del").onclick=()=>{if(confirm("「"+it.label+"」を削除しますか？")){invItems=invItems.filter(x=>x.id!==it.id);lset(K_INV,invItems);invBuildManage();invRender();pushSoon();}};
+    c.appendChild(row);
+  });
+}
+
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");
 document.getElementById("openSync").onclick=()=>{settingsDlg.close();document.getElementById("f_url").value=gasUrl||"";document.getElementById("cfgStatus").textContent="";cfgDlg.showModal();};
@@ -1671,7 +1792,7 @@ applyTheme(theme);
 function setTheme(t){theme=t;lset("routine_theme_v1",theme);applyTheme(theme);paintThemePick();}
 document.getElementById("themeToggle").onclick=()=>setTheme(theme==="light"?"dark":"light");
 
-const TAB_DEFAULTS={check:"Routine",today:"Today",workout:"Training",cal:"Calendar",notes:"Notes"};
+const TAB_DEFAULTS={check:"Routine",today:"Today",workout:"Training",cal:"Calendar",notes:"Notes",invest:"Investment"};
 let tabNames=load("routine_tabnames_v1",{});
 function applyTabNames(){
   document.getElementById("tabCheck").textContent=tabNames.check||TAB_DEFAULTS.check;
@@ -1679,13 +1800,17 @@ function applyTabNames(){
   document.getElementById("tabWorkout").textContent=tabNames.workout||TAB_DEFAULTS.workout;
   document.getElementById("tabCal").textContent=tabNames.cal||TAB_DEFAULTS.cal;
   document.getElementById("tabNotes").textContent=tabNames.notes||TAB_DEFAULTS.notes;
+  document.getElementById("tabInvest").textContent=tabNames.invest||TAB_DEFAULTS.invest;
 }
 applyTabNames();
 
-const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes"];
-const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes"};
+const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes","invest"];
+const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest"};
 let tabOrder=load("routine_taborder_v1",null);
-if(!Array.isArray(tabOrder)||tabOrder.length!==5){tabOrder=TAB_ORDER_DEFAULT.slice();}
+if(!Array.isArray(tabOrder)||!tabOrder.length){tabOrder=TAB_ORDER_DEFAULT.slice();}
+// 新しいタブが増えたら、既存の並び順の末尾に足す（既存の並びは尊重）
+TAB_ORDER_DEFAULT.forEach(k=>{if(!tabOrder.includes(k))tabOrder.push(k);});
+tabOrder=tabOrder.filter(k=>TAB_ORDER_DEFAULT.includes(k));
 function applyTabOrder(){
   const bar=document.querySelector(".tabbar");
   tabOrder.forEach(key=>{const btn=document.getElementById(TAB_BTN_ID[key]);if(btn)bar.appendChild(btn);});
@@ -1714,6 +1839,7 @@ document.getElementById("settingsBtn").onclick=()=>{
   document.getElementById("tn_workout").value=tabNames.workout||"";
   document.getElementById("tn_cal").value=tabNames.cal||"";
   document.getElementById("tn_notes").value=tabNames.notes||"";
+  document.getElementById("tn_invest").value=tabNames.invest||"";
   buildPresetList();
   buildTabOrder();
   buildCatList();
@@ -1838,13 +1964,14 @@ document.getElementById("settingsSave").onclick=()=>{
     workout:document.getElementById("tn_workout").value.trim(),
     cal:document.getElementById("tn_cal").value.trim(),
     notes:document.getElementById("tn_notes").value.trim(),
+    invest:document.getElementById("tn_invest").value.trim(),
   };
   Object.keys(tabNames).forEach(k=>{if(!tabNames[k])delete tabNames[k];});
   lset("routine_tabnames_v1",tabNames);applyTabNames();settingsDlg.close();
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.9";
+const APP_VERSION="OS v3.0";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

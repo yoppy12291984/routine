@@ -287,6 +287,7 @@
     <div class="plan-tools">
       <button class="btn-ghost" id="planFromCal">カレンダー取込</button>
       <button class="btn-ghost" id="planFromRoutine">ルーチン取込</button>
+      <button class="btn-ghost" id="planFromDefault">曜日デフォルト</button>
       <button class="btn-ghost" id="planImport">AI取込</button>
       <button class="btn-primary" id="planAdd">＋ 予定</button>
     </div>
@@ -1500,6 +1501,22 @@ document.getElementById("planFromCal").onclick=()=>{
   tSave();tRender();
   alert(added?added+"件のカレンダー予定を取り込みました（不要なら各予定をタップして削除できます）。":"すでに取り込み済みです。");
 };
+/* 曜日デフォルト：その曜日のデフォルト予定のうち、まだ無いものを追加 */
+document.getElementById("planFromDefault").onclick=()=>{
+  const key=iso(tCur);const d=tData(key);
+  const wd=tCur.getDay();
+  const defs=dayDefaults.filter(dd=>(dd.days||[]).includes(wd));
+  if(!defs.length){alert("この曜日のデフォルト予定は登録されていません。設定から登録できます。");return;}
+  let added=0;
+  defs.forEach(dd=>{
+    const exists=d.plan.some(p=>p.label===dd.label&&(p.start||"")===(dd.start||""));
+    if(exists)return;
+    d.plan.push({id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label:dd.label,start:dd.start||"",end:dd.end||"",cat:dd.cat||"other",fromDefault:true});
+    added++;
+  });
+  tSave();tRender();
+  alert(added?added+"件のデフォルト予定を入れました。":"すでに全部入っています。");
+};
 
 /* AI取込：Claudeが出力したJSONを貼り付けて取り込む */
 const importDlg=document.getElementById("importDlg");
@@ -1815,7 +1832,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.7";
+const APP_VERSION="OS v2.8";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

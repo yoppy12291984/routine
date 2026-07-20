@@ -1291,8 +1291,7 @@ function tRender(){
   const tl=document.getElementById("todoList");tl.innerHTML="";
   d.todo.forEach((t,i)=>{
     const row=document.createElement("div");row.className="todo-row"+(t.done?" done":"");
-    const hasMemo=(t.memo&&t.memo.trim());
-    row.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe"><path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">${esc(t.text)}${hasMemo?' <span class="memoflag">✎</span>':''}</span><button class="rm">×</button>`;
+    row.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe"><path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">${esc(t.text)}</span><button class="rm">×</button>`;
     row.querySelector(".check").onclick=(e)=>{e.stopPropagation();t.done=!t.done;tSave();tRender();};
     row.querySelector(".tx").onclick=()=>{
       if(todoOpen.has(t.id||i))todoOpen.delete(t.id||i);else todoOpen.add(t.id||i);
@@ -1758,7 +1757,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.5";
+const APP_VERSION="OS v2.6";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

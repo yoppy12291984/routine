@@ -533,13 +533,22 @@
   <div class="dlg-f"><button class="btn-ghost" id="planDel" style="color:var(--danger);border-color:var(--danger)">削除</button><button class="btn-ghost" onclick="planDlg.close()">キャンセル</button><button class="btn-primary" id="planSave">保存</button></div>
 </dialog>
 
+<dialog id="noteViewDlg">
+  <div class="dlg-h" id="nv_title">メモ</div>
+  <div class="dlg-b">
+    <div id="nv_date" class="hint" style="margin-bottom:8px"></div>
+    <div id="nv_body" style="font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;color:var(--ink)"></div>
+  </div>
+  <div class="dlg-f"><button class="btn-ghost" onclick="noteViewDlg.close()">閉じる</button><button class="btn-primary" id="nv_edit">編集</button></div>
+</dialog>
+
 <dialog id="noteDlg">
   <div class="dlg-h" id="noteDlgTitle">メモ</div>
   <div class="dlg-b">
     <div class="field"><label>タイトル</label><input id="n_title" placeholder="例：来月の学会の準備"></div>
     <div class="field"><label>内容</label>
-      <textarea id="n_body" rows="6" placeholder="自由に書けます"
-        style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:14px;font-family:var(--sans);resize:vertical"></textarea></div>
+      <textarea id="n_body" rows="12" placeholder="自由に書けます"
+        style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:14px;font-family:var(--sans);resize:vertical;line-height:1.6"></textarea></div>
     <div class="field"><label>日付</label><input id="n_date" type="date"></div>
   </div>
   <div class="dlg-f"><button class="btn-ghost" id="noteDel" style="color:var(--danger);border-color:var(--danger)">削除</button><button class="btn-ghost" onclick="noteDlg.close()">キャンセル</button><button class="btn-primary" id="noteSave">保存</button></div>
@@ -1194,17 +1203,31 @@ function renderNotes(){
     let html='<table class="notetable"><thead><tr><th>日付</th><th>タイトル</th></tr></thead><tbody>';
     sorted.forEach(n=>{html+=`<tr data-id="${n.id}"><td class="td-date">${esc(n.date||"")}</td><td class="td-title">${esc(n.title||"(無題)")}</td></tr>`;});
     html+='</tbody></table>';box.innerHTML=html;
-    box.querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>openNote(notes.find(x=>x.id===tr.dataset.id)));
+    box.querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>viewNote(notes.find(x=>x.id===tr.dataset.id)));
   }else{
     box.innerHTML="";
     sorted.forEach(n=>{
       const c=document.createElement("div");c.className="notecard";
       c.innerHTML=`<div class="nt">${esc(n.title||"(無題)")}</div>${n.body?`<div class="nb">${esc(n.body)}</div>`:""}<div class="nd">${esc(n.date||"")}</div>`;
-      c.onclick=()=>openNote(n);
+      c.onclick=()=>viewNote(n);
       box.appendChild(c);
     });
   }
 }
+const noteViewDlg=document.getElementById("noteViewDlg");
+let viewingNoteId=null;
+function viewNote(n){
+  if(!n)return;viewingNoteId=n.id;
+  document.getElementById("nv_title").textContent=n.title||"(無題)";
+  document.getElementById("nv_date").textContent=n.date||"";
+  document.getElementById("nv_body").textContent=n.body||"";
+  noteViewDlg.showModal();
+}
+document.getElementById("nv_edit").onclick=()=>{
+  const n=notes.find(x=>x.id===viewingNoteId);
+  noteViewDlg.close();
+  if(n)openNote(n);
+};
 function openNote(n){
   editingNoteId=n?n.id:null;
   document.getElementById("noteDlgTitle").textContent=n?"メモを編集":"メモを追加";
@@ -1720,7 +1743,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.3";
+const APP_VERSION="OS v2.4";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

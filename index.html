@@ -390,6 +390,25 @@
 
 <div id="viewInvest" style="display:none">
   <div class="tsection">
+    <div class="tsec-h">投資カレンダー</div>
+    <div class="calhead">
+      <button class="nav" id="ivcPrev">‹</button>
+      <div class="calmonth" id="ivcMonth" style="font-size:18px">----.--</div>
+      <button class="nav" id="ivcNext">›</button>
+      <button class="today" id="ivcToday">今月</button>
+    </div>
+    <div class="calgrid-wrap">
+      <div class="caldow"><span class="sun">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="sat">土</span></div>
+      <div class="calgrid" id="ivcGrid"></div>
+    </div>
+  </div>
+
+  <div class="tsection">
+    <div class="tsec-h">直近のイベント</div>
+    <div id="ivcUpcoming"></div>
+  </div>
+
+  <div class="tsection">
     <div class="tsec-h">投資のやること <span id="invWd" class="hint" style="font-weight:400;text-transform:none;letter-spacing:0;margin:0"></span></div>
     <div id="invList"></div>
     <div class="plan-tools" style="margin-top:8px">
@@ -398,6 +417,15 @@
     </div>
   </div>
 </div>
+
+<dialog id="ivEvDlg">
+  <div class="dlg-h" id="ivEvDlgTitle">イベント</div>
+  <div class="dlg-b">
+    <div id="ivEvDay"></div>
+    <div class="field" style="margin-top:10px"><label>イベントを追加</label><input id="ivEv_label" placeholder="例：FOMC、SQ、雇用統計"></div>
+  </div>
+  <div class="dlg-f"><button class="btn-ghost" onclick="ivEvDlg.close()">閉じる</button><button class="btn-primary" id="ivEv_add">追加</button></div>
+</dialog>
 
 <dialog id="invDlg">
   <div class="dlg-h" id="invDlgTitle">やることを追加</div>
@@ -659,9 +687,11 @@ let notes=load(K_NOTES,[]);   // [{id,title,body,date,cat}]
 let today=load(K_TODAY,{});   // { "2026-07-19": {todo:[{text,done}], plan:[{id,start,end,label,cat,fromCal}], reflection:"" } }
 let reminders=load(K_REMIND,[]);   // 毎日出る「心がけ」（文字列の配列）
 let dayDefaults=load(K_DAYDEF,[]);   // 曜日別デフォルト予定 [{id,days:[1..5],label,start,end,cat}]
-const K_INV="routine_invest_v1",K_INVCHK="routine_invest_checks_v1";
+const K_INV="routine_invest_v1",K_INVCHK="routine_invest_checks_v1",K_INVEV="routine_invest_events_v1";
 let invItems=load(K_INV,[]);   // [{id,label,freq:"everyday"|"weekly",days:[],memo}]
 let invChecks=load(K_INVCHK,{});   // {date:{id:true}}
+let invEvents=load(K_INVEV,{});   // {"2026-07-15":[{id,label}]}
+let invCalMonth=new Date();invCalMonth.setDate(1);invCalMonth.setHours(0,0,0,0);
 let invCur=new Date();invCur.setHours(0,0,0,0);
 const invOpen=new Set();
 let tCur=new Date();tCur.setHours(0,0,0,0);
@@ -768,6 +798,7 @@ async function pull(){
       if(Array.isArray(s.daydef)){dayDefaults=s.daydef;lset(K_DAYDEF,dayDefaults);}
       if(Array.isArray(s.inv)){invItems=s.inv;lset(K_INV,invItems);}
       if(s.invchk){invChecks=s.invchk;lset(K_INVCHK,invChecks);}
+      if(s.invev){invEvents=s.invev;lset(K_INVEV,invEvents);}
       if(Array.isArray(s.tcats)&&s.tcats.length){T_CATS=s.tcats;ensureOther();lset("routine_tcats_v1",T_CATS);}
       if(s.wk){
         if(Array.isArray(s.wk.items)&&s.wk.items.length){wItems=s.wk.items;lset(WK_ITEMS,wItems);}
@@ -799,7 +830,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -1693,6 +1724,7 @@ function invDue(it,d){
   return true;
 }
 function invRender(){
+  renderInvCal();renderInvUpcoming();
   const key=iso(invCur);
   const names=["日","月","火","水","木","金","土"];
   document.getElementById("invWd").textContent=`${invCur.getMonth()+1}/${invCur.getDate()}（${names[invCur.getDay()]}）`;
@@ -1764,6 +1796,77 @@ function invBuildManage(){
     c.appendChild(row);
   });
 }
+
+/* 投資カレンダー */
+function renderInvCal(){
+  document.getElementById("ivcMonth").textContent=invCalMonth.getFullYear()+"."+String(invCalMonth.getMonth()+1).padStart(2,"0");
+  const grid=document.getElementById("ivcGrid");grid.innerHTML="";
+  const y=invCalMonth.getFullYear(),m=invCalMonth.getMonth();
+  const first=new Date(y,m,1);const lead=first.getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const todayIso=iso(new Date());
+  for(let i=0;i<lead;i++){const c=document.createElement("div");c.className="calcell blank";grid.appendChild(c);}
+  for(let dnum=1;dnum<=daysInMonth;dnum++){
+    const date=new Date(y,m,dnum);const key=iso(date);
+    const c=document.createElement("div");c.className="calcell"+(key===todayIso?" today":"");
+    let html='<div class="cd">'+dnum+'</div>';
+    const evs=invEvents[key]||[];
+    evs.slice(0,3).forEach(ev=>{html+='<div class="ev memo">'+esc(ev.label)+'</div>';});
+    if(evs.length>3)html+='<div class="more">+'+(evs.length-3)+'</div>';
+    c.innerHTML=html;
+    c.onclick=()=>openInvEvent(date);
+    grid.appendChild(c);
+  }
+}
+document.getElementById("ivcPrev").onclick=()=>{invCalMonth.setMonth(invCalMonth.getMonth()-1);renderInvCal();};
+document.getElementById("ivcNext").onclick=()=>{invCalMonth.setMonth(invCalMonth.getMonth()+1);renderInvCal();};
+document.getElementById("ivcToday").onclick=()=>{invCalMonth=new Date();invCalMonth.setDate(1);invCalMonth.setHours(0,0,0,0);renderInvCal();};
+function renderInvUpcoming(){
+  const box=document.getElementById("ivcUpcoming");box.innerHTML="";
+  const todayIso=iso(new Date());
+  const list=[];
+  Object.keys(invEvents).forEach(key=>{if(key>=todayIso)(invEvents[key]||[]).forEach(ev=>list.push({key,ev}));});
+  list.sort((a,b)=>a.key.localeCompare(b.key));
+  const near=list.slice(0,8);
+  if(!near.length){box.innerHTML='<div class="dayev-none">今後のイベントはありません。カレンダーの日をタップして追加できます。</div>';return;}
+  const names=["日","月","火","水","木","金","土"];
+  near.forEach(({key,ev})=>{
+    const d=new Date(key+"T00:00:00");
+    const diff=Math.round((d-new Date(todayIso+"T00:00:00"))/86400000);
+    const when=diff===0?"今日":diff===1?"明日":"あと"+diff+"日";
+    const row=document.createElement("div");row.className="dayev";
+    row.innerHTML=`<span class="t">${d.getMonth()+1}/${d.getDate()}(${names[d.getDay()]})</span><span style="flex:1">${esc(ev.label)}</span><span class="pcatname" style="color:var(--accent2)">${when}</span>`;
+    box.appendChild(row);
+  });
+}
+const ivEvDlg=document.getElementById("ivEvDlg");
+let ivEvDate=null;
+function openInvEvent(date){
+  ivEvDate=date;const key=iso(date);
+  const names=["日","月","火","水","木","金","土"];
+  document.getElementById("ivEvDlgTitle").textContent=`${date.getMonth()+1}月${date.getDate()}日（${names[date.getDay()]}）`;
+  const box=document.getElementById("ivEvDay");
+  const evs=invEvents[key]||[];
+  if(evs.length){
+    box.innerHTML=evs.map(ev=>`<div class="dayev"><span style="flex:1">${esc(ev.label)}</span><button class="rm" data-id="${ev.id}">×</button></div>`).join("");
+  }else{box.innerHTML='<div class="dayev-none">この日のイベントはありません</div>';}
+  box.querySelectorAll(".rm").forEach(b=>b.onclick=()=>{
+    invEvents[key]=(invEvents[key]||[]).filter(x=>x.id!==b.dataset.id);
+    if(!invEvents[key].length)delete invEvents[key];
+    lset(K_INVEV,invEvents);openInvEvent(date);renderInvCal();renderInvUpcoming();pushSoon();
+  });
+  document.getElementById("ivEv_label").value="";
+  ivEvDlg.showModal();
+}
+document.getElementById("ivEv_add").onclick=()=>{
+  if(!ivEvDate)return;const key=iso(ivEvDate);
+  const label=document.getElementById("ivEv_label").value.trim();
+  if(!label){alert("イベント名を入力してください");return;}
+  if(!invEvents[key])invEvents[key]=[];
+  invEvents[key].push({id:"ie"+Date.now().toString(36),label});
+  lset(K_INVEV,invEvents);document.getElementById("ivEv_label").value="";
+  openInvEvent(ivEvDate);renderInvCal();renderInvUpcoming();pushSoon();
+};
 
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");
@@ -1971,7 +2074,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v3.0";
+const APP_VERSION="OS v3.1";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

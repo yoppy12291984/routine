@@ -397,6 +397,9 @@
       <button class="nav" id="ivcNext">›</button>
       <button class="today" id="ivcToday">今月</button>
     </div>
+    <div class="plan-tools" style="margin-top:8px">
+      <button class="btn-ghost" id="ivcBulk">日程を一括登録</button>
+    </div>
     <div class="calgrid-wrap">
       <div class="caldow"><span class="sun">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span class="sat">土</span></div>
       <div class="calgrid" id="ivcGrid"></div>
@@ -417,6 +420,17 @@
     </div>
   </div>
 </div>
+
+<dialog id="ivBulkDlg">
+  <div class="dlg-h">日程を一括登録</div>
+  <div class="dlg-b">
+    <p class="hint">「日付 イベント名」を1行ずつ貼り付けてください（例：2026-01-28 FOMC）。Claudeに「2026年のFOMC日程は？」と聞いて、出力を貼り付けると便利です。</p>
+    <textarea id="ivBulkText" rows="8" placeholder="2026-01-28 FOMC&#10;2026-03-18 FOMC&#10;2026-02-06 米雇用統計"
+      style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:13px;font-family:var(--mono);resize:vertical"></textarea>
+    <p class="hint" id="ivBulkStatus"></p>
+  </div>
+  <div class="dlg-f"><button class="btn-ghost" onclick="ivBulkDlg.close()">キャンセル</button><button class="btn-primary" id="ivBulkAdd">登録</button></div>
+</dialog>
 
 <dialog id="ivEvDlg">
   <div class="dlg-h" id="ivEvDlgTitle">イベント</div>
@@ -1798,6 +1812,22 @@ function invBuildManage(){
 }
 
 /* 投資カレンダー */
+// 第2金曜のSQを計算（メジャー=3/6/9/12月、それ以外はマイナー）
+function sqForMonth(y,m){ // m:0-11
+  let count=0,d=1;
+  const dim=new Date(y,m+1,0).getDate();
+  for(d=1;d<=dim;d++){if(new Date(y,m,d).getDay()===5){count++;if(count===2)break;}}
+  const key=iso(new Date(y,m,d));
+  const major=[2,5,8,11].includes(m);
+  return {key,label:major?"メジャーSQ":"SQ"};
+}
+function autoEventsForMonth(y,m){return [sqForMonth(y,m)];}
+function autoEventsInRange(fromIso,count){
+  // fromの月から数ヶ月分のSQを返す
+  const out=[];const base=new Date(fromIso+"T00:00:00");
+  for(let i=0;i<count;i++){const d=new Date(base.getFullYear(),base.getMonth()+i,1);out.push(sqForMonth(d.getFullYear(),d.getMonth()));}
+  return out;
+}
 function renderInvCal(){
   document.getElementById("ivcMonth").textContent=invCalMonth.getFullYear()+"."+String(invCalMonth.getMonth()+1).padStart(2,"0");
   const grid=document.getElementById("ivcGrid");grid.innerHTML="";
@@ -1805,14 +1835,19 @@ function renderInvCal(){
   const first=new Date(y,m,1);const lead=first.getDay();
   const daysInMonth=new Date(y,m+1,0).getDate();
   const todayIso=iso(new Date());
+  const autoEv=autoEventsForMonth(y,m);
   for(let i=0;i<lead;i++){const c=document.createElement("div");c.className="calcell blank";grid.appendChild(c);}
   for(let dnum=1;dnum<=daysInMonth;dnum++){
     const date=new Date(y,m,dnum);const key=iso(date);
     const c=document.createElement("div");c.className="calcell"+(key===todayIso?" today":"");
     let html='<div class="cd">'+dnum+'</div>';
+    const auto=autoEv.filter(a=>a.key===key);
+    auto.forEach(a=>{html+='<div class="ev" style="background:rgba(95,179,163,.2);color:var(--accent2)">'+esc(a.label)+'</div>';});
     const evs=invEvents[key]||[];
-    evs.slice(0,3).forEach(ev=>{html+='<div class="ev memo">'+esc(ev.label)+'</div>';});
-    if(evs.length>3)html+='<div class="more">+'+(evs.length-3)+'</div>';
+    evs.slice(0,3-auto.length>=0?3:0).forEach(ev=>{html+='<div class="ev memo">'+esc(ev.label)+'</div>';});
+    const shown=auto.length+Math.min(evs.length,Math.max(0,3-auto.length));
+    const total=auto.length+evs.length;
+    if(total>shown)html+='<div class="more">+'+(total-shown)+'</div>';
     c.innerHTML=html;
     c.onclick=()=>openInvEvent(date);
     grid.appendChild(c);
@@ -1825,7 +1860,9 @@ function renderInvUpcoming(){
   const box=document.getElementById("ivcUpcoming");box.innerHTML="";
   const todayIso=iso(new Date());
   const list=[];
-  Object.keys(invEvents).forEach(key=>{if(key>=todayIso)(invEvents[key]||[]).forEach(ev=>list.push({key,ev}));});
+  Object.keys(invEvents).forEach(key=>{if(key>=todayIso)(invEvents[key]||[]).forEach(ev=>list.push({key,ev:{label:ev.label}}));});
+  // 自動SQ（今月から6ヶ月分）
+  autoEventsInRange(todayIso,6).forEach(a=>{if(a.key>=todayIso)list.push({key:a.key,ev:{label:a.label,auto:true}});});
   list.sort((a,b)=>a.key.localeCompare(b.key));
   const near=list.slice(0,8);
   if(!near.length){box.innerHTML='<div class="dayev-none">今後のイベントはありません。カレンダーの日をタップして追加できます。</div>';return;}
@@ -1866,6 +1903,27 @@ document.getElementById("ivEv_add").onclick=()=>{
   invEvents[key].push({id:"ie"+Date.now().toString(36),label});
   lset(K_INVEV,invEvents);document.getElementById("ivEv_label").value="";
   openInvEvent(ivEvDate);renderInvCal();renderInvUpcoming();pushSoon();
+};
+const ivBulkDlg=document.getElementById("ivBulkDlg");
+document.getElementById("ivcBulk").onclick=()=>{document.getElementById("ivBulkText").value="";document.getElementById("ivBulkStatus").textContent="";ivBulkDlg.showModal();};
+document.getElementById("ivBulkAdd").onclick=()=>{
+  const lines=document.getElementById("ivBulkText").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  let added=0,skipped=0;
+  lines.forEach(line=>{
+    // 先頭の YYYY-MM-DD または YYYY/MM/DD を取り、残りをラベルに
+    const m=line.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})\s+(.+)$/);
+    if(!m){skipped++;return;}
+    const key=`${m[1]}-${String(+m[2]).padStart(2,"0")}-${String(+m[3]).padStart(2,"0")}`;
+    const label=m[4].trim();
+    if(!invEvents[key])invEvents[key]=[];
+    if(invEvents[key].some(e=>e.label===label)){skipped++;return;}
+    invEvents[key].push({id:"ie"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label});
+    added++;
+  });
+  lset(K_INVEV,invEvents);
+  document.getElementById("ivBulkStatus").textContent=`${added}件を登録しました。${skipped?`（${skipped}件は形式が違うか重複でスキップ）`:""}`;
+  renderInvCal();renderInvUpcoming();pushSoon();
+  if(added&&!skipped)ivBulkDlg.close();
 };
 
 /* ---------- config ---------- */
@@ -2074,7 +2132,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v3.1";
+const APP_VERSION="OS v3.2";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

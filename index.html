@@ -390,6 +390,28 @@
 
 <div id="viewInvest" style="display:none">
   <div class="tsection">
+    <div class="tsec-h">今日やること <span id="invTodayWd" class="hint" style="font-weight:400;text-transform:none;letter-spacing:0;margin:0"></span></div>
+    <div class="top" style="margin-bottom:10px">
+      <div class="controls" style="margin-left:0">
+        <button class="nav" id="itPrev">‹</button>
+        <button class="today" id="itToday">今日</button>
+        <button class="nav" id="itNext">›</button>
+      </div>
+    </div>
+    <div id="invTodayList"></div>
+    <div class="todo-add"><input id="invTodayInput" placeholder="今日やることを入力してEnter"></div>
+  </div>
+
+  <div class="tsection">
+    <div class="tsec-h">ルーチンでやること</div>
+    <div id="invList"></div>
+    <div class="plan-tools" style="margin-top:8px">
+      <button class="btn-primary" id="invAdd">＋ やること</button>
+      <button class="btn-ghost" id="invManage">すべて管理</button>
+    </div>
+  </div>
+
+  <div class="tsection">
     <div class="tsec-h">投資カレンダー</div>
     <div class="calhead">
       <button class="nav" id="ivcPrev">‹</button>
@@ -409,15 +431,6 @@
   <div class="tsection">
     <div class="tsec-h">直近のイベント</div>
     <div id="ivcUpcoming"></div>
-  </div>
-
-  <div class="tsection">
-    <div class="tsec-h">投資のやること <span id="invWd" class="hint" style="font-weight:400;text-transform:none;letter-spacing:0;margin:0"></span></div>
-    <div id="invList"></div>
-    <div class="plan-tools" style="margin-top:8px">
-      <button class="btn-primary" id="invAdd">＋ やること</button>
-      <button class="btn-ghost" id="invManage">すべて管理</button>
-    </div>
   </div>
 </div>
 
@@ -446,8 +459,14 @@
   <div class="dlg-b">
     <div class="field"><label>やること</label><input id="iv_label" placeholder="例：ブレイクアウトした銘柄を探す"></div>
     <div class="field"><label>頻度</label>
-      <select id="iv_freq"><option value="everyday">毎日</option><option value="weekly">曜日を指定</option></select></div>
+      <select id="iv_freq">
+        <option value="everyday">毎日（土日含む）</option>
+        <option value="weekday">毎日（平日）</option>
+        <option value="weekly">曜日を指定</option>
+        <option value="date">特定の日付</option>
+      </select></div>
     <div class="field" id="iv_wdField" style="display:none"><label>曜日（複数可）</label><div class="wd-pick" id="iv_wdPick"></div></div>
+    <div class="field" id="iv_dateField" style="display:none"><label>日付</label><input id="iv_date" type="date"></div>
   </div>
   <div class="dlg-f"><button class="btn-ghost" id="invDel" style="color:var(--danger);border-color:var(--danger)">削除</button><button class="btn-ghost" onclick="invDlg.close()">キャンセル</button><button class="btn-primary" id="invSave">保存</button></div>
 </dialog>
@@ -701,10 +720,11 @@ let notes=load(K_NOTES,[]);   // [{id,title,body,date,cat}]
 let today=load(K_TODAY,{});   // { "2026-07-19": {todo:[{text,done}], plan:[{id,start,end,label,cat,fromCal}], reflection:"" } }
 let reminders=load(K_REMIND,[]);   // 毎日出る「心がけ」（文字列の配列）
 let dayDefaults=load(K_DAYDEF,[]);   // 曜日別デフォルト予定 [{id,days:[1..5],label,start,end,cat}]
-const K_INV="routine_invest_v1",K_INVCHK="routine_invest_checks_v1",K_INVEV="routine_invest_events_v1";
-let invItems=load(K_INV,[]);   // [{id,label,freq:"everyday"|"weekly",days:[],memo}]
+const K_INV="routine_invest_v1",K_INVCHK="routine_invest_checks_v1",K_INVEV="routine_invest_events_v1",K_INVTODAY="routine_invest_today_v1";
+let invItems=load(K_INV,[]);   // ルーチンでやること [{id,label,freq,days,date,memo}]
 let invChecks=load(K_INVCHK,{});   // {date:{id:true}}
 let invEvents=load(K_INVEV,{});   // {"2026-07-15":[{id,label}]}
+let invToday=load(K_INVTODAY,{});   // 今日やること（日付ごと） {date:[{id,text,done,memo}]}
 let invCalMonth=new Date();invCalMonth.setDate(1);invCalMonth.setHours(0,0,0,0);
 let invCur=new Date();invCur.setHours(0,0,0,0);
 const invOpen=new Set();
@@ -813,6 +833,7 @@ async function pull(){
       if(Array.isArray(s.inv)){invItems=s.inv;lset(K_INV,invItems);}
       if(s.invchk){invChecks=s.invchk;lset(K_INVCHK,invChecks);}
       if(s.invev){invEvents=s.invev;lset(K_INVEV,invEvents);}
+      if(s.invtoday){invToday=s.invtoday;lset(K_INVTODAY,invToday);}
       if(Array.isArray(s.tcats)&&s.tcats.length){T_CATS=s.tcats;ensureOther();lset("routine_tcats_v1",T_CATS);}
       if(s.wk){
         if(Array.isArray(s.wk.items)&&s.wk.items.length){wItems=s.wk.items;lset(WK_ITEMS,wItems);}
@@ -844,7 +865,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -1733,18 +1754,44 @@ function renderMonthSummary(){
 
 /* ---------- Investment tab ---------- */
 function invDue(it,d){
+  const wd=d.getDay();
   if(it.freq==="everyday")return true;
-  if(it.freq==="weekly")return (it.days||[]).includes(d.getDay());
+  if(it.freq==="weekday")return wd>=1&&wd<=5;
+  if(it.freq==="weekly")return (it.days||[]).includes(wd);
+  if(it.freq==="date")return it.date===iso(d);
   return true;
+}
+function invTodayArr(key){
+  if(!Array.isArray(invToday[key]))invToday[key]=[];
+  invToday[key].forEach(t=>{if(!t.id)t.id="it"+Math.random().toString(36).slice(2,7);});
+  return invToday[key];
 }
 function invRender(){
   renderInvCal();renderInvUpcoming();
   const key=iso(invCur);
   const names=["日","月","火","水","木","金","土"];
-  document.getElementById("invWd").textContent=`${invCur.getMonth()+1}/${invCur.getDate()}（${names[invCur.getDay()]}）`;
+  // 今日やること（日付ごと）
+  document.getElementById("invTodayWd").textContent=`${invCur.getMonth()+1}/${invCur.getDate()}（${names[invCur.getDay()]}）`;
+  const tbox=document.getElementById("invTodayList");tbox.innerHTML="";
+  const arr=invTodayArr(key);
+  arr.forEach((t,i)=>{
+    const row=document.createElement("div");row.className="todo-row"+(t.done?" done":"");
+    row.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe"><path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">${esc(t.text)}</span><button class="rm">×</button>`;
+    row.querySelector(".check").onclick=(e)=>{e.stopPropagation();t.done=!t.done;lset(K_INVTODAY,invToday);invRender();pushSoon();};
+    row.querySelector(".tx").onclick=()=>{if(invOpen.has("t"+t.id))invOpen.delete("t"+t.id);else invOpen.add("t"+t.id);invRender();};
+    row.querySelector(".rm").onclick=(e)=>{e.stopPropagation();arr.splice(i,1);lset(K_INVTODAY,invToday);invRender();pushSoon();};
+    tbox.appendChild(row);
+    if(invOpen.has("t"+t.id)){
+      const md=document.createElement("div");md.className="todo-memo";
+      const ta=document.createElement("textarea");ta.rows=3;ta.value=t.memo||"";ta.placeholder="メモ（銘柄、気づきなど）";
+      ta.onchange=()=>{t.memo=ta.value;lset(K_INVTODAY,invToday);pushSoon();};
+      md.appendChild(ta);tbox.appendChild(md);
+    }
+  });
+  // ルーチンでやること
   const box=document.getElementById("invList");box.innerHTML="";
   const due=invItems.filter(it=>invDue(it,invCur));
-  if(!due.length){box.innerHTML='<div class="notes-empty">「＋ やること」から追加できます（毎日／曜日指定）。</div>';return;}
+  if(!due.length){box.innerHTML='<div class="notes-empty">「＋ やること」から追加できます（毎日／平日／曜日／特定日）。</div>';}
   const dayChk=invChecks[key]||{};
   due.forEach(it=>{
     const done=!!dayChk[it.id];
@@ -1762,9 +1809,20 @@ function invRender(){
     }
   });
 }
+document.getElementById("itPrev").onclick=()=>{invCur.setDate(invCur.getDate()-1);invRender();};
+document.getElementById("itNext").onclick=()=>{invCur.setDate(invCur.getDate()+1);invRender();};
+document.getElementById("itToday").onclick=()=>{invCur=new Date();invCur.setHours(0,0,0,0);invRender();};
+document.getElementById("invTodayInput").onkeydown=e=>{
+  if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;invTodayArr(iso(invCur)).push({id:"it"+Date.now().toString(36),text:v,done:false,memo:""});e.target.value="";lset(K_INVTODAY,invToday);invRender();pushSoon();}
+};
 const invDlg=document.getElementById("invDlg");
 let editingInvId=null;
 function invBuildWd(){const p=document.getElementById("iv_wdPick");p.innerHTML="";[1,2,3,4,5,6,0].forEach(w=>{const s=document.createElement("span");s.textContent=WD[w];s.dataset.w=w;s.onclick=()=>s.classList.toggle("on");p.appendChild(s);});}
+function ivToggleFreqFields(){
+  const f=document.getElementById("iv_freq").value;
+  document.getElementById("iv_wdField").style.display=(f==="weekly")?"block":"none";
+  document.getElementById("iv_dateField").style.display=(f==="date")?"block":"none";
+}
 function openInv(it){
   editingInvId=it?it.id:null;
   document.getElementById("invDlgTitle").textContent=it?"やることを編集":"やることを追加";
@@ -1772,11 +1830,12 @@ function openInv(it){
   document.getElementById("iv_freq").value=it?(it.freq||"everyday"):"everyday";
   invBuildWd();
   if(it&&it.freq==="weekly")document.querySelectorAll("#iv_wdPick span").forEach(s=>{if((it.days||[]).includes(+s.dataset.w))s.classList.add("on");});
-  document.getElementById("iv_wdField").style.display=(document.getElementById("iv_freq").value==="weekly")?"block":"none";
+  document.getElementById("iv_date").value=(it&&it.freq==="date")?(it.date||""):"";
+  ivToggleFreqFields();
   document.getElementById("invDel").style.display=it?"inline-block":"none";
   invDlg.showModal();
 }
-document.getElementById("iv_freq").onchange=(e)=>{document.getElementById("iv_wdField").style.display=(e.target.value==="weekly")?"block":"none";};
+document.getElementById("iv_freq").onchange=ivToggleFreqFields;
 document.getElementById("invAdd").onclick=()=>openInv(null);
 document.getElementById("invSave").onclick=()=>{
   const label=document.getElementById("iv_label").value.trim();
@@ -1784,8 +1843,10 @@ document.getElementById("invSave").onclick=()=>{
   const freq=document.getElementById("iv_freq").value;
   const days=freq==="weekly"?[...document.querySelectorAll("#iv_wdPick .on")].map(s=>+s.dataset.w):[];
   if(freq==="weekly"&&!days.length){alert("曜日を選んでください");return;}
-  if(editingInvId){const it=invItems.find(x=>x.id===editingInvId);if(it){it.label=label;it.freq=freq;it.days=days;}}
-  else{invItems.push({id:"iv"+Date.now().toString(36),label,freq,days,memo:""});}
+  const date=freq==="date"?document.getElementById("iv_date").value:"";
+  if(freq==="date"&&!date){alert("日付を選んでください");return;}
+  if(editingInvId){const it=invItems.find(x=>x.id===editingInvId);if(it){it.label=label;it.freq=freq;it.days=days;it.date=date;}}
+  else{invItems.push({id:"iv"+Date.now().toString(36),label,freq,days,date,memo:""});}
   lset(K_INV,invItems);invDlg.close();editingInvId=null;invRender();pushSoon();
   if(invManageDlg.open)invBuildManage();
 };
@@ -1802,7 +1863,10 @@ function invBuildManage(){
   if(!invItems.length){c.innerHTML='<div class="notes-empty">まだありません。</div>';return;}
   const names=["日","月","火","水","木","金","土"];
   invItems.forEach(it=>{
-    const meta=it.freq==="everyday"?"毎日":[1,2,3,4,5,6,0].filter(w=>(it.days||[]).includes(w)).map(w=>names[w]).join("");
+    let meta="毎日";
+    if(it.freq==="weekday")meta="平日";
+    else if(it.freq==="weekly")meta=[1,2,3,4,5,6,0].filter(w=>(it.days||[]).includes(w)).map(w=>names[w]).join("");
+    else if(it.freq==="date")meta=it.date||"日付未設定";
     const row=document.createElement("div");row.className="manage-item";
     row.innerHTML=`<span class="mlabel">${esc(it.label)}</span><span class="mmeta">${meta}</span><button class="edit">編集</button><button class="del">×</button>`;
     row.querySelector(".edit").onclick=()=>openInv(it);
@@ -2132,7 +2196,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v3.2";
+const APP_VERSION="OS v3.3";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

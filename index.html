@@ -463,6 +463,18 @@
       <input id="cat_name" placeholder="区分名 例：診療">
       <button class="btn-primary" id="cat_add" style="flex:none">区分を追加</button>
     </div>
+    <p class="hint" style="margin-top:16px">曜日ごとの「いつもの予定」を登録できます。その曜日を初めて開いたとき、自動で予定表に入ります（あとから編集・削除できます）。</p>
+    <div id="ddList"></div>
+    <div class="field" style="margin-top:8px"><input id="dd_label" placeholder="予定名 例：仕事／外来"></div>
+    <div class="wd-pick" id="dd_days" style="margin-bottom:8px"></div>
+    <div class="row2">
+      <input id="dd_start" type="time" title="開始">
+      <input id="dd_end" type="time" title="終了">
+    </div>
+    <div class="row2" style="margin-top:6px">
+      <select id="dd_cat"></select>
+      <button class="btn-primary" id="dd_add" style="flex:none">予定を追加</button>
+    </div>
     <p class="hint" style="margin-top:16px">クラウド同期（PC・スマホ連動）の設定です。</p>
     <button class="btn-ghost" id="openSync" style="width:100%">同期設定を開く</button>
   </div>
@@ -597,7 +609,7 @@ const DEFAULTS=[
   // 月次
   {label:"各銀行へ必要資金を振り込む（給料日後）",group:"monthly",freq:"monthly",dom:[25,30]},
 ];
-const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url",K_GROUPS="routine_groups_v2",K_MEMOS="routine_memos_v1",K_NOTES="routine_notes_v1",K_TODAY="routine_today_v1",K_REMIND="routine_reminders_v1";
+const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_duty_v2",K_URL="routine_gas_url",K_GROUPS="routine_groups_v2",K_MEMOS="routine_memos_v1",K_NOTES="routine_notes_v1",K_TODAY="routine_today_v1",K_REMIND="routine_reminders_v1",K_DAYDEF="routine_daydefaults_v1";
 
 function load(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function lset(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -613,6 +625,7 @@ let memos=load(K_MEMOS,{});   // {day:"2026-07-05":"...", month:"2026-07":"..."}
 let notes=load(K_NOTES,[]);   // [{id,title,body,date,cat}]
 let today=load(K_TODAY,{});   // { "2026-07-19": {todo:[{text,done}], plan:[{id,start,end,label,cat,fromCal}], reflection:"" } }
 let reminders=load(K_REMIND,[]);   // 毎日出る「心がけ」（文字列の配列）
+let dayDefaults=load(K_DAYDEF,[]);   // 曜日別デフォルト予定 [{id,days:[1..5],label,start,end,cat}]
 let tCur=new Date();tCur.setHours(0,0,0,0);
 const todoOpen=new Set();   // 展開中のやりたいこと（そのセッション内）
 const T_CAT_DEFAULTS=[
@@ -714,6 +727,7 @@ async function pull(){
       if(Array.isArray(s.notes)){notes=s.notes;lset(K_NOTES,notes);}
       if(s.today){today=s.today;lset(K_TODAY,today);}
       if(Array.isArray(s.reminders)){reminders=s.reminders;lset(K_REMIND,reminders);}
+      if(Array.isArray(s.daydef)){dayDefaults=s.daydef;lset(K_DAYDEF,dayDefaults);}
       if(Array.isArray(s.tcats)&&s.tcats.length){T_CATS=s.tcats;ensureOther();lset("routine_tcats_v1",T_CATS);}
       if(s.wk){
         if(Array.isArray(s.wk.items)&&s.wk.items.length){wItems=s.wk.items;lset(WK_ITEMS,wItems);}
@@ -744,7 +758,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -1266,12 +1280,22 @@ document.getElementById("noteDel").onclick=()=>{
 
 /* ---------- Today tab ---------- */
 function tData(key){
+  const isNew=!today[key];
   if(!today[key])today[key]={todo:[],plan:[],reflection:""};
   const d=today[key];
   if(!Array.isArray(d.todo))d.todo=[];
   if(!Array.isArray(d.plan))d.plan=[];
   if(typeof d.reflection!=="string")d.reflection="";
   d.todo.forEach(t=>{if(!t.id)t.id="t"+Math.random().toString(36).slice(2,8);});
+  // 初回だけ、その曜日のデフォルト予定を入れる
+  if(isNew && !d.seeded){
+    const wd=new Date(key+"T00:00:00").getDay();
+    dayDefaults.filter(dd=>(dd.days||[]).includes(wd)).forEach(dd=>{
+      d.plan.push({id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label:dd.label,start:dd.start||"",end:dd.end||"",cat:dd.cat||"other",fromDefault:true});
+    });
+    d.seeded=true;
+    if(d.plan.length)lset(K_TODAY,today);
+  }
   return d;
 }
 function tSave(){lset(K_TODAY,today);pushSoon();}
@@ -1673,7 +1697,41 @@ document.getElementById("settingsBtn").onclick=()=>{
   buildTabOrder();
   buildCatList();
   fillCatSelect(document.getElementById("ps_cat"),"other");
+  buildDayDefaults();
+  fillCatSelect(document.getElementById("dd_cat"),"work");
+  buildDdDays();
   settingsDlg.showModal();
+};
+const WD_ORDER=[1,2,3,4,5,6,0];
+function buildDdDays(){
+  const p=document.getElementById("dd_days");p.innerHTML="";
+  WD_ORDER.forEach(w=>{const s=document.createElement("span");s.textContent=WD[w];s.dataset.w=w;s.onclick=()=>s.classList.toggle("on");p.appendChild(s);});
+}
+function buildDayDefaults(){
+  const c=document.getElementById("ddList");c.innerHTML="";
+  if(!dayDefaults.length){c.innerHTML='<div class="rem-empty" style="padding:6px 2px">まだ登録がありません。</div>';}
+  dayDefaults.forEach(dd=>{
+    const cat=catOf(dd.cat);
+    const dayStr=WD_ORDER.filter(w=>(dd.days||[]).includes(w)).map(w=>WD[w]).join("");
+    const row=document.createElement("div");row.className="manage-item";
+    row.innerHTML=`<span class="gdot" style="background:${cat.color};width:10px;height:10px;border-radius:2px"></span>
+      <span class="mlabel">${esc(dd.label)}</span>
+      <span class="mmeta">${dayStr} ${dd.start||""}${dd.end?"-"+dd.end:""}</span>
+      <button class="del">×</button>`;
+    row.querySelector(".del").onclick=()=>{dayDefaults=dayDefaults.filter(x=>x.id!==dd.id);lset(K_DAYDEF,dayDefaults);buildDayDefaults();pushSoon();};
+    c.appendChild(row);
+  });
+}
+document.getElementById("dd_add").onclick=()=>{
+  const label=document.getElementById("dd_label").value.trim();
+  if(!label){alert("予定名を入力してください");return;}
+  const days=[...document.querySelectorAll("#dd_days .on")].map(s=>+s.dataset.w);
+  if(!days.length){alert("曜日を選んでください");return;}
+  dayDefaults.push({id:"dd"+Date.now().toString(36),label,days,start:document.getElementById("dd_start").value,end:document.getElementById("dd_end").value,cat:document.getElementById("dd_cat").value});
+  lset(K_DAYDEF,dayDefaults);
+  document.getElementById("dd_label").value="";document.getElementById("dd_start").value="";document.getElementById("dd_end").value="";
+  document.querySelectorAll("#dd_days .on").forEach(s=>s.classList.remove("on"));
+  buildDayDefaults();pushSoon();
 };
 const CAT_COLORS=["#7f8cd6","#e0a458","#5fb3a3","#5fb3d6","#e2523a","#6bbf78","#b98cd6","#d4795f","#c9a14a","#7cc4b0","#d68fb0","#9ab86a","#c0985f","#e2823a"];
 function nextCatColor(){const used=new Set(T_CATS.map(c=>c.color));return CAT_COLORS.find(c=>!used.has(c))||CAT_COLORS[T_CATS.length%CAT_COLORS.length];}
@@ -1757,7 +1815,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.6";
+const APP_VERSION="OS v2.7";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

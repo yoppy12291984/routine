@@ -101,8 +101,9 @@
   .manage-item .edit{background:transparent;border:1px solid var(--line);color:var(--accent2);cursor:pointer;font-size:12px;padding:5px 10px;border-radius:7px}
   .manage-item .edit:active{background:var(--panel2)}
   .hint{font-size:12px;color:var(--ink-faint);margin:2px 0 14px;line-height:1.6}
-  .tabbar{display:flex;gap:5px;margin-bottom:16px}
-  .tab{background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);font-size:11px;letter-spacing:.3px;padding:5px 11px;border-radius:7px;cursor:pointer;font-family:var(--mono)}
+  .tabbar{display:flex;gap:5px;margin-bottom:16px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
+  .tabbar::-webkit-scrollbar{display:none}
+  .tab{background:var(--panel);border:1px solid var(--line);color:var(--ink-dim);font-size:11px;letter-spacing:.3px;padding:5px 11px;border-radius:7px;cursor:pointer;font-family:var(--mono);flex:none;white-space:nowrap}
   .tab.on{background:var(--panel2);color:var(--ink);border-color:var(--accent);font-weight:600}
   .calhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
   .calmonth{font-family:var(--mono);font-size:22px;font-weight:600;flex:1}
@@ -1140,6 +1141,9 @@ function showTab(which){
   if(which==="notes")renderNotes();
   if(which==="today")tRender();
   if(which==="invest")invRender();
+  // 選択タブが画面外なら、見える位置までスクロール
+  const activeBtn=document.getElementById(TAB_BTN_ID[which]);
+  if(activeBtn&&activeBtn.scrollIntoView)activeBtn.scrollIntoView({inline:"nearest",block:"nearest"});
 }
 tabCheck.onclick=()=>showTab("check");
 tabCal.onclick=()=>showTab("cal");
@@ -2236,7 +2240,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v3.4";
+const APP_VERSION="OS v3.5";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

@@ -1291,18 +1291,13 @@ function renderReminders(){
   if(!reminders.length){box.innerHTML='<div class="rem-empty">下の欄に入力してEnterで、毎日忘れたくないことを追加できます。</div>';}
   reminders.forEach((t,i)=>{
     const row=document.createElement("div");row.className="rem-item";
-    row.innerHTML=`<span class="bullet">・</span><span class="rtx">${esc(t)}</span>
-      <button class="rmv up"${i===0?" disabled style=opacity:.25":""}>▲</button>
-      <button class="rmv down"${i===reminders.length-1?" disabled style=opacity:.25":""}>▼</button>
-      <button class="rm">×</button>`;
+    row.innerHTML=`<span class="bullet">・</span><span class="rtx">${esc(t)}</span><button class="rm">×</button>`;
     row.querySelector(".rtx").onclick=()=>{
       const nv=prompt("心がけを編集",t);
       if(nv===null)return;const v=nv.trim();
       if(!v){reminders.splice(i,1);}else{reminders[i]=v;}
       lset(K_REMIND,reminders);renderReminders();pushSoon();
     };
-    row.querySelector(".up").onclick=()=>{if(i>0){[reminders[i-1],reminders[i]]=[reminders[i],reminders[i-1]];lset(K_REMIND,reminders);renderReminders();pushSoon();}};
-    row.querySelector(".down").onclick=()=>{if(i<reminders.length-1){[reminders[i+1],reminders[i]]=[reminders[i],reminders[i+1]];lset(K_REMIND,reminders);renderReminders();pushSoon();}};
     row.querySelector(".rm").onclick=()=>{reminders.splice(i,1);lset(K_REMIND,reminders);renderReminders();pushSoon();};
     box.appendChild(row);
   });
@@ -1725,7 +1720,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.2";
+const APP_VERSION="OS v2.3";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

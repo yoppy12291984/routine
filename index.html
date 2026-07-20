@@ -151,6 +151,9 @@
   .todo-row.done .tx{color:var(--ink-faint);text-decoration:line-through}
   .todo-row .rm{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px}
   .todo-add input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:9px 11px;border-radius:8px;font-size:14px;font-family:var(--sans);margin-top:6px}
+  .todo-memo{padding:0 2px 10px 31px}
+  .todo-memo textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:9px 11px;border-radius:8px;font-size:13px;font-family:var(--sans);resize:vertical;line-height:1.5}
+  .memoflag{color:var(--accent);font-size:12px}
   .plan-tools{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
   .plan-tools button{font-size:12px;padding:7px 11px}
   .plan-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-left-width:4px;border-radius:9px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
@@ -611,6 +614,7 @@ let notes=load(K_NOTES,[]);   // [{id,title,body,date,cat}]
 let today=load(K_TODAY,{});   // { "2026-07-19": {todo:[{text,done}], plan:[{id,start,end,label,cat,fromCal}], reflection:"" } }
 let reminders=load(K_REMIND,[]);   // 毎日出る「心がけ」（文字列の配列）
 let tCur=new Date();tCur.setHours(0,0,0,0);
+const todoOpen=new Set();   // 展開中のやりたいこと（そのセッション内）
 const T_CAT_DEFAULTS=[
   {id:"sleep",name:"睡眠",color:"#7f8cd6"},
   {id:"meal",name:"食事",color:"#e0a458"},
@@ -1267,6 +1271,7 @@ function tData(key){
   if(!Array.isArray(d.todo))d.todo=[];
   if(!Array.isArray(d.plan))d.plan=[];
   if(typeof d.reflection!=="string")d.reflection="";
+  d.todo.forEach(t=>{if(!t.id)t.id="t"+Math.random().toString(36).slice(2,8);});
   return d;
 }
 function tSave(){lset(K_TODAY,today);pushSoon();}
@@ -1286,11 +1291,21 @@ function tRender(){
   const tl=document.getElementById("todoList");tl.innerHTML="";
   d.todo.forEach((t,i)=>{
     const row=document.createElement("div");row.className="todo-row"+(t.done?" done":"");
-    row.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe"><path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">${esc(t.text)}</span><button class="rm">×</button>`;
-    row.querySelector(".check").onclick=()=>{t.done=!t.done;tSave();tRender();};
-    row.querySelector(".tx").onclick=()=>{t.done=!t.done;tSave();tRender();};
-    row.querySelector(".rm").onclick=()=>{d.todo.splice(i,1);tSave();tRender();};
+    const hasMemo=(t.memo&&t.memo.trim());
+    row.innerHTML=`<span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#cfe"><path d="M5 12l5 5L20 6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tx">${esc(t.text)}${hasMemo?' <span class="memoflag">✎</span>':''}</span><button class="rm">×</button>`;
+    row.querySelector(".check").onclick=(e)=>{e.stopPropagation();t.done=!t.done;tSave();tRender();};
+    row.querySelector(".tx").onclick=()=>{
+      if(todoOpen.has(t.id||i))todoOpen.delete(t.id||i);else todoOpen.add(t.id||i);
+      tRender();
+    };
+    row.querySelector(".rm").onclick=(e)=>{e.stopPropagation();d.todo.splice(i,1);tSave();tRender();};
     tl.appendChild(row);
+    if(todoOpen.has(t.id||i)){
+      const md=document.createElement("div");md.className="todo-memo";
+      const ta=document.createElement("textarea");ta.rows=3;ta.value=t.memo||"";ta.placeholder="ここに具体的な内容を書けます（例：〇〇の本を読む、△△を調べる）";
+      ta.onchange=()=>{t.memo=ta.value;tSave();};
+      md.appendChild(ta);tl.appendChild(md);
+    }
   });
   // plan
   const pl=document.getElementById("planList");pl.innerHTML="";
@@ -1743,7 +1758,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.4";
+const APP_VERSION="OS v2.5";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

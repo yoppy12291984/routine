@@ -156,6 +156,7 @@
   .memoflag{color:var(--accent);font-size:12px}
   .sumtog{font-size:11px !important;padding:3px 8px !important}
   .sumtog.off{opacity:.5;text-decoration:line-through}
+  .tmpl-box{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 11px;font-size:12px;line-height:1.6;color:var(--ink-dim);white-space:pre-wrap;font-family:var(--mono)}
   .plan-tools{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
   .plan-tools button{font-size:12px;padding:7px 11px}
   .plan-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-left-width:4px;border-radius:9px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
@@ -437,8 +438,11 @@
 <dialog id="ivBulkDlg">
   <div class="dlg-h">日程を一括登録</div>
   <div class="dlg-b">
-    <p class="hint">「日付 イベント名」を1行ずつ貼り付けてください（例：2026-01-28 FOMC）。Claudeに「2026年のFOMC日程は？」と聞いて、出力を貼り付けると便利です。</p>
-    <textarea id="ivBulkText" rows="8" placeholder="2026-01-28 FOMC&#10;2026-03-18 FOMC&#10;2026-02-06 米雇用統計"
+    <p class="hint">他のチャットで日程を聞くとき、下の「お願い文」をコピーして貼ると、そのまま取り込める形で返ってきます。</p>
+    <div class="tmpl-box" id="ivTmpl"></div>
+    <button class="btn-ghost" id="ivTmplCopy" style="width:100%;margin:6px 0 14px">お願い文をコピー</button>
+    <p class="hint">↓ 返ってきた日程をここに貼り付けて「登録」。普通の書き方（1月28日、1/28、箇条書きなど）でも読み取ります。</p>
+    <textarea id="ivBulkText" rows="8" placeholder="例：&#10;2026-01-28 FOMC&#10;3月18日 FOMC&#10;・2/6 米雇用統計"
       style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:13px;font-family:var(--mono);resize:vertical"></textarea>
     <p class="hint" id="ivBulkStatus"></p>
   </div>
@@ -1969,23 +1973,59 @@ document.getElementById("ivEv_add").onclick=()=>{
   openInvEvent(ivEvDate);renderInvCal();renderInvUpcoming();pushSoon();
 };
 const ivBulkDlg=document.getElementById("ivBulkDlg");
-document.getElementById("ivcBulk").onclick=()=>{document.getElementById("ivBulkText").value="";document.getElementById("ivBulkStatus").textContent="";ivBulkDlg.showModal();};
+const IV_TMPL=()=>`${new Date().getFullYear()}年〜${new Date().getFullYear()+1}年の以下の日程を教えて。各行「YYYY-MM-DD イベント名」の形式で、1行に1つ、コードブロックで、説明なしで出して。\n・アメリカのFOMC\n・アメリカの雇用統計、CPI\n・日本の主要な経済イベント`;
+document.getElementById("ivcBulk").onclick=()=>{
+  document.getElementById("ivBulkText").value="";
+  document.getElementById("ivBulkStatus").textContent="";
+  document.getElementById("ivTmpl").textContent=IV_TMPL();
+  ivBulkDlg.showModal();
+};
+document.getElementById("ivTmplCopy").onclick=async()=>{
+  const t=IV_TMPL();
+  try{await navigator.clipboard.writeText(t);document.getElementById("ivTmplCopy").textContent="コピーしました！";setTimeout(()=>document.getElementById("ivTmplCopy").textContent="お願い文をコピー",1500);}
+  catch(e){
+    // クリップボード不可の環境では選択させる
+    const r=document.createRange();r.selectNodeContents(document.getElementById("ivTmpl"));
+    const sel=getSelection();sel.removeAllRanges();sel.addRange(r);
+    document.getElementById("ivTmplCopy").textContent="上を長押しでコピー";
+  }
+};
+// いろいろな日付表記からイベントを取り出す
+function parseBulkLine(line,defaultYear){
+  let s=line.trim();
+  if(!s)return null;
+  s=s.replace(/^[-・*•\s]+/,"");   // 箇条書き記号を除去
+  let y,mo,d,rest;
+  let m;
+  // YYYY-MM-DD / YYYY/MM/DD
+  if(m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})[\s:：)\]】]*(.*)$/)){y=+m[1];mo=+m[2];d=+m[3];rest=m[4];}
+  // YYYY年M月D日
+  else if(m=s.match(/^(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?[\s:：)\]】]*(.*)$/)){y=+m[1];mo=+m[2];d=+m[3];rest=m[4];}
+  // M月D日
+  else if(m=s.match(/^(\d{1,2})\s*月\s*(\d{1,2})\s*日?[\s:：)\]】]*(.*)$/)){y=defaultYear;mo=+m[1];d=+m[2];rest=m[3];}
+  // M/D （年なし）
+  else if(m=s.match(/^(\d{1,2})[\/.](\d{1,2})[\s:：)\]】]*(.*)$/)){y=defaultYear;mo=+m[1];d=+m[2];rest=m[3];}
+  else return null;
+  if(mo<1||mo>12||d<1||d>31)return null;
+  const label=(rest||"").replace(/^[\s:：\-–—・)\]】]+/,"").trim();
+  if(!label)return null;
+  return {key:`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`,label};
+}
 document.getElementById("ivBulkAdd").onclick=()=>{
-  const lines=document.getElementById("ivBulkText").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  const lines=document.getElementById("ivBulkText").value.split("\n");
+  const defaultYear=new Date().getFullYear();
   let added=0,skipped=0;
   lines.forEach(line=>{
-    // 先頭の YYYY-MM-DD または YYYY/MM/DD を取り、残りをラベルに
-    const m=line.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})\s+(.+)$/);
-    if(!m){skipped++;return;}
-    const key=`${m[1]}-${String(+m[2]).padStart(2,"0")}-${String(+m[3]).padStart(2,"0")}`;
-    const label=m[4].trim();
-    if(!invEvents[key])invEvents[key]=[];
-    if(invEvents[key].some(e=>e.label===label)){skipped++;return;}
-    invEvents[key].push({id:"ie"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label});
+    if(!line.trim())return;
+    const p=parseBulkLine(line,defaultYear);
+    if(!p){skipped++;return;}
+    if(!invEvents[p.key])invEvents[p.key]=[];
+    if(invEvents[p.key].some(e=>e.label===p.label)){skipped++;return;}
+    invEvents[p.key].push({id:"ie"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label:p.label});
     added++;
   });
   lset(K_INVEV,invEvents);
-  document.getElementById("ivBulkStatus").textContent=`${added}件を登録しました。${skipped?`（${skipped}件は形式が違うか重複でスキップ）`:""}`;
+  document.getElementById("ivBulkStatus").textContent=`${added}件を登録しました。${skipped?`（${skipped}件は日付が読み取れず／重複でスキップ）`:""}`;
   renderInvCal();renderInvUpcoming();pushSoon();
   if(added&&!skipped)ivBulkDlg.close();
 };
@@ -2196,7 +2236,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v3.3";
+const APP_VERSION="OS v3.4";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

@@ -154,6 +154,8 @@
   .todo-memo{padding:0 2px 10px 31px}
   .todo-memo textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:9px 11px;border-radius:8px;font-size:13px;font-family:var(--sans);resize:vertical;line-height:1.5}
   .memoflag{color:var(--accent);font-size:12px}
+  .sumtog{font-size:11px !important;padding:3px 8px !important}
+  .sumtog.off{opacity:.5;text-decoration:line-through}
   .plan-tools{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
   .plan-tools button{font-size:12px;padding:7px 11px}
   .plan-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-left-width:4px;border-radius:9px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
@@ -1589,8 +1591,9 @@ function drawCharts(d){
     ch+=`<line x1="${ix.toFixed(1)}" y1="${iy.toFixed(1)}" x2="${ox.toFixed(1)}" y2="${oy.toFixed(1)}" stroke="var(--danger)" stroke-width="3" stroke-linecap="round"/>`;
   }
   clock.innerHTML=ch;
-  // 活動別合計 ドーナツ
-  const totals={};plan.forEach(p=>{totals[p.cat]=(totals[p.cat]||0)+durMin(p);});
+  // 活動別合計 ドーナツ（「集計外」の区分は除く）
+  const excluded=new Set(T_CATS.filter(c=>c.exclude).map(c=>c.id));
+  const totals={};plan.forEach(p=>{if(excluded.has(p.cat))return;totals[p.cat]=(totals[p.cat]||0)+durMin(p);});
   const sum=Object.values(totals).reduce((a,b)=>a+b,0);
   const donut=document.getElementById("totalChart");
   if(!sum){donut.innerHTML='<text x="100" y="105" text-anchor="middle" fill="var(--ink-faint)" font-size="12" font-family="monospace">no data</text>';}
@@ -1622,11 +1625,12 @@ function donutArc(f1,f2,color){
 /* 今月の集計：区分ごとの合計時間 */
 function renderMonthSummary(){
   const y=tCur.getFullYear(),m=tCur.getMonth();
+  const excluded=new Set(T_CATS.filter(c=>c.exclude).map(c=>c.id));
   const totals={};let grand=0;
   Object.keys(today).forEach(key=>{
     const[ky,km]=key.split("-").map(Number);
     if(ky===y&&km===m+1){
-      (today[key].plan||[]).forEach(p=>{const dm=durMin(p);if(dm>0){totals[p.cat]=(totals[p.cat]||0)+dm;grand+=dm;}});
+      (today[key].plan||[]).forEach(p=>{if(excluded.has(p.cat))return;const dm=durMin(p);if(dm>0){totals[p.cat]=(totals[p.cat]||0)+dm;grand+=dm;}});
     }
   });
   const box=document.getElementById("monthSummary");
@@ -1757,12 +1761,13 @@ function buildCatList(){
   T_CATS.forEach(cat=>{
     const isOther=(cat.id==="other");
     const row=document.createElement("div");row.className="manage-item";
+    const sumBtn=`<button class="edit sumtog" title="活動別合計・今月の集計に含めるか">${cat.exclude?"集計外":"集計"}</button>`;
     if(isOther){
-      row.innerHTML=`<span class="gdot" style="background:${cat.color};width:11px;height:11px;border-radius:2px"></span><span class="mlabel">${esc(cat.name)}</span><span class="mmeta">既定</span>`;
+      row.innerHTML=`<span class="gdot" style="background:${cat.color};width:11px;height:11px;border-radius:2px"></span><span class="mlabel">${esc(cat.name)}</span>${sumBtn}<span class="mmeta">既定</span>`;
     }else{
       row.innerHTML=`<input class="cat-color" type="color" value="${cat.color}" title="色を変更" style="width:22px;height:22px;padding:0;border:1px solid var(--line);border-radius:5px;background:none;cursor:pointer;flex:none">
         <input class="gname-in" value="${esc(cat.name)}" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:7px 9px;border-radius:7px;font-size:14px">
-        <button class="edit gsave">保存</button><button class="del">×</button>`;
+        ${sumBtn}<button class="edit gsave">保存</button><button class="del">×</button>`;
       const input=row.querySelector(".gname-in");
       const colorIn=row.querySelector(".cat-color");
       colorIn.onchange=()=>{
@@ -1783,6 +1788,13 @@ function buildCatList(){
         T_CATS=T_CATS.filter(x=>x.id!==cat.id);ensureOther();lset("routine_tcats_v1",T_CATS);buildCatList();fillCatSelect(document.getElementById("ps_cat"),"other");pushSoon();
       };
     }
+    const st=row.querySelector(".sumtog");
+    st.classList.toggle("off",!!cat.exclude);
+    st.onclick=()=>{
+      cat.exclude=!cat.exclude;lset("routine_tcats_v1",T_CATS);buildCatList();
+      if(document.getElementById("viewToday").style.display!=="none")tRender();
+      pushSoon();
+    };
     c.appendChild(row);
   });
 }
@@ -1832,7 +1844,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v2.8";
+const APP_VERSION="OS v2.9";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

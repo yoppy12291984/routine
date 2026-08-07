@@ -1148,8 +1148,8 @@ function showTab(which){
   if(which==="cal")renderCal();
   if(which==="workout")wRender();
   if(which==="notes")renderNotes();
-  if(which==="today")tRender();
-  if(which==="invest")invRender();
+  if(which==="today"){tCur=new Date(cur);tRender();}
+  if(which==="invest"){invCur=new Date(cur);invRender();}
   // 選択タブが画面外なら、見える位置までスクロール
   const activeBtn=document.getElementById(TAB_BTN_ID[which]);
   if(activeBtn&&activeBtn.scrollIntoView)activeBtn.scrollIntoView({inline:"nearest",block:"nearest"});
@@ -1497,7 +1497,7 @@ document.getElementById("remInput").onkeydown=e=>{
 document.getElementById("tPrev").onclick=()=>{tCur.setDate(tCur.getDate()-1);setSharedDate(tCur);};
 document.getElementById("tNext").onclick=()=>{tCur.setDate(tCur.getDate()+1);setSharedDate(tCur);};
 document.getElementById("tTodayBtn").onclick=()=>{setSharedDate(new Date());};
-document.getElementById("tDatePick").onchange=e=>{const[y,m,da]=e.target.value.split("-").map(Number);tCur=new Date(y,m-1,da);tRender();};
+document.getElementById("tDatePick").onchange=e=>{const[y,m,da]=e.target.value.split("-").map(Number);setSharedDate(new Date(y,m-1,da));};
 document.getElementById("todoInput").onkeydown=e=>{
   if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;tData(iso(tCur)).todo.push({text:v,done:false});e.target.value="";tSave();tRender();}
 };
@@ -2249,7 +2249,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v3.9";
+const APP_VERSION="OS v4.0";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

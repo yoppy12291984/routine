@@ -64,11 +64,11 @@
   .gline{flex:1;height:1px;background:var(--line)}
 
   ul{list-style:none}
-  li.item{display:flex;align-items:center;gap:13px;background:var(--panel);border:1px solid var(--line);
-    border-radius:11px;padding:14px 15px;margin-bottom:7px;cursor:pointer;transition:background .15s,transform .05s}
+  li.item{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);
+    border-radius:9px;padding:9px 12px;margin-bottom:6px;cursor:pointer;transition:background .15s,transform .05s}
   li.item:active{transform:scale(.997);background:var(--panel2)}
-  .check{width:24px;height:24px;border-radius:7px;border:2px solid var(--ink-faint);flex:none;display:grid;place-items:center;transition:.15s}
-  .check svg{width:14px;height:14px;opacity:0;transform:scale(.6);transition:.15s}
+  .check{width:20px;height:20px;border-radius:6px;border:2px solid var(--ink-faint);flex:none;display:grid;place-items:center;transition:.15s}
+  .check svg{width:12px;height:12px;opacity:0;transform:scale(.6);transition:.15s}
   li.done .check{background:var(--done);border-color:var(--done)}
   li.done .check svg{opacity:1;transform:scale(1)}
   .label{font-size:14px;flex:1;line-height:1.4}
@@ -804,6 +804,15 @@ let wChecks=load(WK_CHECKS,{}),wDuties=load(WK_DUTY,{});
 let wCur=new Date();wCur.setHours(0,0,0,0);
 let calItems=[];   // カレンダー由来（GASが正・ローカル保存もpushもしない）
 let cur=new Date();cur.setHours(0,0,0,0);
+// 全タブで日付を連動させる
+function setSharedDate(d){
+  const nd=new Date(d);nd.setHours(0,0,0,0);
+  cur=new Date(nd);tCur=new Date(nd);invCur=new Date(nd);
+  // 表示中のタブを再描画
+  if(document.getElementById("viewCheck").style.display!=="none")render();
+  if(document.getElementById("viewToday").style.display!=="none")tRender();
+  if(document.getElementById("viewInvest").style.display!=="none")invRender();
+}
 let syncTimer=null;
 let pendingPush=false;     // ローカル変更が未送信
 let pushing=false;         // push実行中
@@ -964,10 +973,10 @@ function streak(){
 }
 
 /* ---------- nav ---------- */
-document.getElementById("prev").onclick=()=>{cur.setDate(cur.getDate()-1);render();};
-document.getElementById("next").onclick=()=>{cur.setDate(cur.getDate()+1);render();};
-document.getElementById("todayBtn").onclick=()=>{cur=new Date();cur.setHours(0,0,0,0);render();};
-document.getElementById("datePick").onchange=e=>{const[y,m,da]=e.target.value.split("-").map(Number);cur=new Date(y,m-1,da);render();};
+document.getElementById("prev").onclick=()=>{cur.setDate(cur.getDate()-1);setSharedDate(cur);};
+document.getElementById("next").onclick=()=>{cur.setDate(cur.getDate()+1);setSharedDate(cur);};
+document.getElementById("todayBtn").onclick=()=>{setSharedDate(new Date());};
+document.getElementById("datePick").onchange=e=>{const[y,m,da]=e.target.value.split("-").map(Number);setSharedDate(new Date(y,m-1,da));};
 document.getElementById("duty").onchange=e=>{duties[iso(cur)]=e.target.value;lset(K_DUTY,duties);pushSoon();};
 document.getElementById("resetDay").onclick=()=>{if(confirm("この日のチェックをすべて消しますか？")){delete checks[iso(cur)];lset(K_CHECKS,checks);render();pushSoon();}};
 document.getElementById("resetAll").onclick=()=>{
@@ -1485,9 +1494,9 @@ function renderReminders(){
 document.getElementById("remInput").onkeydown=e=>{
   if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;reminders.push(v);e.target.value="";lset(K_REMIND,reminders);renderReminders();pushSoon();}
 };
-document.getElementById("tPrev").onclick=()=>{tCur.setDate(tCur.getDate()-1);tRender();};
-document.getElementById("tNext").onclick=()=>{tCur.setDate(tCur.getDate()+1);tRender();};
-document.getElementById("tTodayBtn").onclick=()=>{tCur=new Date();tCur.setHours(0,0,0,0);tRender();};
+document.getElementById("tPrev").onclick=()=>{tCur.setDate(tCur.getDate()-1);setSharedDate(tCur);};
+document.getElementById("tNext").onclick=()=>{tCur.setDate(tCur.getDate()+1);setSharedDate(tCur);};
+document.getElementById("tTodayBtn").onclick=()=>{setSharedDate(new Date());};
 document.getElementById("tDatePick").onchange=e=>{const[y,m,da]=e.target.value.split("-").map(Number);tCur=new Date(y,m-1,da);tRender();};
 document.getElementById("todoInput").onkeydown=e=>{
   if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;tData(iso(tCur)).todo.push({text:v,done:false});e.target.value="";tSave();tRender();}
@@ -1817,9 +1826,9 @@ function invRender(){
     }
   });
 }
-document.getElementById("itPrev").onclick=()=>{invCur.setDate(invCur.getDate()-1);invRender();};
-document.getElementById("itNext").onclick=()=>{invCur.setDate(invCur.getDate()+1);invRender();};
-document.getElementById("itToday").onclick=()=>{invCur=new Date();invCur.setHours(0,0,0,0);invRender();};
+document.getElementById("itPrev").onclick=()=>{invCur.setDate(invCur.getDate()-1);setSharedDate(invCur);};
+document.getElementById("itNext").onclick=()=>{invCur.setDate(invCur.getDate()+1);setSharedDate(invCur);};
+document.getElementById("itToday").onclick=()=>{setSharedDate(new Date());};
 document.getElementById("invTodayInput").onkeydown=e=>{
   if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;invTodayArr(iso(invCur)).push({id:"it"+Date.now().toString(36),text:v,done:false,memo:""});e.target.value="";lset(K_INVTODAY,invToday);invRender();pushSoon();}
 };
@@ -2240,7 +2249,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v3.6";
+const APP_VERSION="OS v3.9";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

@@ -459,7 +459,7 @@
 <div id="viewPacking" style="display:none">
   <div id="packListView">
     <div class="tsection">
-      <div class="tsec-h">持ち物</div>
+      <div class="tsec-h" style="display:flex;align-items:center">持ち物 <span class="viewtoggle"><button class="vt" id="packCardBtn">カード</button><button class="vt" id="packTableBtn">表</button></span></div>
       <div id="packList"></div>
       <div class="plan-tools" style="margin-top:8px">
         <button class="btn-primary" id="packImport">貼り付けて取り込む</button>
@@ -869,7 +869,7 @@ const T_PRESET_DEFAULTS=[
 ];
 let tPresets=load("routine_tpresets_v1",null);
 if(!tPresets){tPresets=T_PRESET_DEFAULTS.map(p=>({id:"pr"+Math.random().toString(36).slice(2,7),...p}));lset("routine_tpresets_v1",tPresets);}
-let noteView=load("routine_noteview_v1","card");   // card | table
+let noteView=load("routine_noteview_v1","table");   // card | table
 let calMonth=new Date();calMonth.setDate(1);calMonth.setHours(0,0,0,0);
 
 /* ===== 筋トレ（workout）データ ===== */
@@ -2177,20 +2177,32 @@ function packProgress(list){
   return {done,total};
 }
 let packCurId=null;
+let packView=load("routine_packview_v1","table");   // card | table
 function packShowList(){packEditing=false;document.getElementById("packListView").style.display="block";document.getElementById("packDetailView").style.display="none";packCurId=null;packRender();}
 function packRender(){
   const box=document.getElementById("packList");if(!box)return;box.innerHTML="";
+  document.getElementById("packCardBtn").classList.toggle("on",packView==="card");
+  document.getElementById("packTableBtn").classList.toggle("on",packView==="table");
   const active=packing.slice().filter(p=>!p.archived).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
   if(!active.length){box.innerHTML='<div class="notes-empty">まだ持ち物リストがありません。「貼り付けて取り込む」から追加できます。</div>';return;}
-  active.forEach(p=>{
-    const pr=packProgress(p);
-    const meta=[p.event,p.date].filter(Boolean).join(" ・ ");
-    const c=document.createElement("div");c.className="notecard";
-    c.innerHTML=`<div class="nt">${esc(p.title||"(無題)")}</div><div class="nd">${meta?esc(meta)+" ・ ":""}${pr.done} / ${pr.total}</div>`;
-    c.onclick=()=>packOpenDetail(p.id);
-    box.appendChild(c);
-  });
+  if(packView==="table"){
+    let html='<table class="notetable"><thead><tr><th>日付</th><th>タイトル</th><th>進捗</th></tr></thead><tbody>';
+    active.forEach(p=>{const pr=packProgress(p);html+=`<tr data-id="${p.id}"><td class="td-date">${esc(p.date||"")}</td><td class="td-title">${esc(p.title||"(無題)")}${p.event?`<span class="hint"> ・ ${esc(p.event)}</span>`:""}</td><td class="td-date">${pr.done}/${pr.total}</td></tr>`;});
+    html+='</tbody></table>';box.innerHTML=html;
+    box.querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>packOpenDetail(tr.dataset.id));
+  }else{
+    active.forEach(p=>{
+      const pr=packProgress(p);
+      const meta=[p.event,p.date].filter(Boolean).join(" ・ ");
+      const c=document.createElement("div");c.className="notecard";
+      c.innerHTML=`<div class="nt">${esc(p.title||"(無題)")}</div><div class="nd">${meta?esc(meta)+" ・ ":""}${pr.done} / ${pr.total}</div>`;
+      c.onclick=()=>packOpenDetail(p.id);
+      box.appendChild(c);
+    });
+  }
 }
+document.getElementById("packCardBtn").onclick=()=>{packView="card";lset("routine_packview_v1",packView);packRender();};
+document.getElementById("packTableBtn").onclick=()=>{packView="table";lset("routine_packview_v1",packView);packRender();};
 function packOpenDetail(id){
   const p=packing.find(x=>x.id===id);if(!p)return;
   packCurId=id;
@@ -2629,7 +2641,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v4.7";
+const APP_VERSION="OS v4.8";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

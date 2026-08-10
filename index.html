@@ -143,6 +143,12 @@
   .notetable tr:active td{background:var(--panel2)}
   .notetable .td-title{font-weight:700}
   .notetable .td-date{font-family:var(--mono);color:var(--ink-faint);white-space:nowrap}
+  .notetable .td-star{cursor:pointer;color:#e0a458;font-size:15px;width:22px;text-align:center;padding-left:4px;padding-right:4px}
+  .notetable tr.fav-row .td-title{color:#e2523a}
+  html[data-theme="light"] .notetable tr.fav-row .td-title{color:#c8391f}
+  .notecard .favstar{cursor:pointer;color:#e0a458;margin-right:6px;font-size:14px}
+  .notecard.fav .nt{color:#e2523a}
+  html[data-theme="light"] .notecard.fav .nt{color:#c8391f}
   .notes-empty{color:var(--ink-faint);font-size:14px;padding:24px;text-align:center;border:1px dashed var(--line);border-radius:11px}
   .tsection{margin-bottom:24px}
   .tsec-h{font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
@@ -173,6 +179,9 @@
   .pack-item .pl{flex:1;font-size:14px}
   .pack-item.done .pl{color:var(--ink-faint);text-decoration:line-through}
   .pack-item .pnote{display:block;font-size:12px;color:var(--ink-faint);margin-top:2px;text-decoration:none}
+  .pack-additem{display:flex;align-items:center;gap:8px;padding:9px 2px;color:var(--accent2);font-size:13px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .pack-additem .plus{display:inline-grid;place-items:center;width:20px;height:20px;border:1.5px dashed var(--accent2);border-radius:6px;font-size:14px;flex:none}
+  .pack-additem:active{opacity:.6}
   .pack-item .rmv{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 6px;flex:none}
   .pack-item .rm{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
   .pack-sec-h .rmv,.pack-sec-h .rm{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 7px;flex:none;font-weight:400;letter-spacing:0;text-transform:none}
@@ -1471,17 +1480,19 @@ function renderNotes(){
   document.getElementById("noteCardBtn").classList.toggle("on",noteView==="card");
   document.getElementById("noteTableBtn").classList.toggle("on",noteView==="table");
   if(!notes.length){box.innerHTML='<div class="notes-empty">まだメモがありません。「＋ メモを追加」から作成できます。</div>';return;}
-  const sorted=notes.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const sorted=notes.slice().sort((a,b)=>((b.fav?1:0)-(a.fav?1:0))||(b.date||"").localeCompare(a.date||""));
   if(noteView==="table"){
-    let html='<table class="notetable"><thead><tr><th>日付</th><th>タイトル</th></tr></thead><tbody>';
-    sorted.forEach(n=>{html+=`<tr data-id="${n.id}"><td class="td-date">${esc(n.date||"")}</td><td class="td-title">${esc(n.title||"(無題)")}</td></tr>`;});
+    let html='<table class="notetable"><thead><tr><th></th><th>日付</th><th>タイトル</th></tr></thead><tbody>';
+    sorted.forEach(n=>{html+=`<tr data-id="${n.id}"${n.fav?' class="fav-row"':''}><td class="td-star" data-star="${n.id}">${n.fav?"★":"☆"}</td><td class="td-date">${esc(n.date||"")}</td><td class="td-title">${esc(n.title||"(無題)")}</td></tr>`;});
     html+='</tbody></table>';box.innerHTML=html;
+    box.querySelectorAll("td[data-star]").forEach(td=>td.onclick=(e)=>{e.stopPropagation();const n=notes.find(x=>x.id===td.dataset.star);if(n){n.fav=!n.fav;lset(K_NOTES,notes);pushSoon();renderNotes();}});
     box.querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>viewNote(notes.find(x=>x.id===tr.dataset.id)));
   }else{
     box.innerHTML="";
     sorted.forEach(n=>{
-      const c=document.createElement("div");c.className="notecard";
-      c.innerHTML=`<div class="nt">${esc(n.title||"(無題)")}</div>${n.body?`<div class="nb">${esc(n.body)}</div>`:""}<div class="nd">${esc(n.date||"")}</div>`;
+      const c=document.createElement("div");c.className="notecard"+(n.fav?" fav":"");
+      c.innerHTML=`<div class="nt"><span class="favstar" data-star="${n.id}">${n.fav?"★":"☆"}</span>${esc(n.title||"(無題)")}</div>${n.body?`<div class="nb">${esc(n.body)}</div>`:""}<div class="nd">${esc(n.date||"")}</div>`;
+      c.querySelector(".favstar").onclick=(e)=>{e.stopPropagation();n.fav=!n.fav;lset(K_NOTES,notes);pushSoon();renderNotes();};
       c.onclick=()=>viewNote(n);
       box.appendChild(c);
     });
@@ -2183,19 +2194,21 @@ function packRender(){
   const box=document.getElementById("packList");if(!box)return;box.innerHTML="";
   document.getElementById("packCardBtn").classList.toggle("on",packView==="card");
   document.getElementById("packTableBtn").classList.toggle("on",packView==="table");
-  const active=packing.slice().filter(p=>!p.archived).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+  const active=packing.slice().filter(p=>!p.archived).sort((a,b)=>((b.fav?1:0)-(a.fav?1:0))||(b.updatedAt||"").localeCompare(a.updatedAt||""));
   if(!active.length){box.innerHTML='<div class="notes-empty">まだ持ち物リストがありません。「貼り付けて取り込む」から追加できます。</div>';return;}
   if(packView==="table"){
-    let html='<table class="notetable"><thead><tr><th>日付</th><th>タイトル</th><th>進捗</th></tr></thead><tbody>';
-    active.forEach(p=>{const pr=packProgress(p);html+=`<tr data-id="${p.id}"><td class="td-date">${esc(p.date||"")}</td><td class="td-title">${esc(p.title||"(無題)")}${p.event?`<span class="hint"> ・ ${esc(p.event)}</span>`:""}</td><td class="td-date">${pr.done}/${pr.total}</td></tr>`;});
+    let html='<table class="notetable"><thead><tr><th></th><th>日付</th><th>タイトル</th><th>進捗</th></tr></thead><tbody>';
+    active.forEach(p=>{const pr=packProgress(p);html+=`<tr data-id="${p.id}"${p.fav?' class="fav-row"':''}><td class="td-star" data-star="${p.id}">${p.fav?"★":"☆"}</td><td class="td-date">${esc(p.date||"")}</td><td class="td-title">${esc(p.title||"(無題)")}${p.event?`<span class="hint"> ・ ${esc(p.event)}</span>`:""}</td><td class="td-date">${pr.done}/${pr.total}</td></tr>`;});
     html+='</tbody></table>';box.innerHTML=html;
+    box.querySelectorAll("td[data-star]").forEach(td=>td.onclick=(e)=>{e.stopPropagation();const p=packing.find(x=>x.id===td.dataset.star);if(p){p.fav=!p.fav;lset(K_PACK,packing);pushSoon();packRender();}});
     box.querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>packOpenDetail(tr.dataset.id));
   }else{
     active.forEach(p=>{
       const pr=packProgress(p);
       const meta=[p.event,p.date].filter(Boolean).join(" ・ ");
-      const c=document.createElement("div");c.className="notecard";
-      c.innerHTML=`<div class="nt">${esc(p.title||"(無題)")}</div><div class="nd">${meta?esc(meta)+" ・ ":""}${pr.done} / ${pr.total}</div>`;
+      const c=document.createElement("div");c.className="notecard"+(p.fav?" fav":"");
+      c.innerHTML=`<div class="nt"><span class="favstar" data-star="${p.id}">${p.fav?"★":"☆"}</span>${esc(p.title||"(無題)")}</div><div class="nd">${meta?esc(meta)+" ・ ":""}${pr.done} / ${pr.total}</div>`;
+      c.querySelector(".favstar").onclick=(e)=>{e.stopPropagation();p.fav=!p.fav;lset(K_PACK,packing);pushSoon();packRender();};
       c.onclick=()=>packOpenDetail(p.id);
       box.appendChild(c);
     });
@@ -2226,9 +2239,8 @@ function packRenderDetail(){
     const rem=(sec.items||[]).filter(it=>!it.checked).length;
     const h=document.createElement("div");h.className="pack-sec-h";
     if(packEditing){
-      h.innerHTML=`<input class="sec-name-in" value="${esc(sec.name||"")}" placeholder="見出し名" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:5px 8px;border-radius:6px;font-size:13px;font-weight:400"><button class="rmv secadd">＋項目</button><button class="rm secdel">×</button>`;
+      h.innerHTML=`<input class="sec-name-in" value="${esc(sec.name||"")}" placeholder="見出し名" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:5px 8px;border-radius:6px;font-size:13px;font-weight:400"><button class="rm secdel">×</button>`;
       h.querySelector(".sec-name-in").onchange=e=>{sec.name=e.target.value.trim();p.updatedAt=new Date().toISOString();lset(K_PACK,packing);pushSoon();};
-      h.querySelector(".secadd").onclick=()=>openPackItem(si);
       h.querySelector(".secdel").onclick=()=>{if(confirm(`セクション「${sec.name||"（見出しなし）"}」を項目ごと削除しますか？`)){p.sections.splice(si,1);p.updatedAt=new Date().toISOString();lset(K_PACK,packing);packRenderDetail();pushSoon();}};
     }else{
       h.innerHTML=`${esc(sec.name||"（見出しなし）")} <span class="rem">残${rem}</span>`;
@@ -2251,6 +2263,11 @@ function packRenderDetail(){
       }
       box.appendChild(row);
     });
+    // 常に表示する「＋ 項目を追加」行
+    const add=document.createElement("div");add.className="pack-additem";
+    add.innerHTML=`<span class="plus">＋</span> 項目を追加`;
+    add.onclick=()=>openPackItem(si);
+    box.appendChild(add);
   });
 }
 document.getElementById("packEditMode").onclick=()=>{packEditing=!packEditing;packRenderDetail();};
@@ -2641,7 +2658,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v4.9";
+const APP_VERSION="OS v5.1";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

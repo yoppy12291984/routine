@@ -214,6 +214,7 @@
   <button class="tab" id="tabCal">Calendar</button>
   <button class="tab" id="tabNotes">Notes</button>
   <button class="tab" id="tabInvest">Investment</button>
+  <button class="tab" id="tabPacking">Packing</button>
 </div>
 
 <div id="viewCheck">
@@ -436,6 +437,13 @@
   </div>
 </div>
 
+<div id="viewPacking" style="display:none">
+  <div class="tsection">
+    <div class="tsec-h">持ち物</div>
+    <div id="packList"></div>
+  </div>
+</div>
+
 <dialog id="ivBulkDlg">
   <div class="dlg-h">日程を一括登録</div>
   <div class="dlg-b">
@@ -544,6 +552,7 @@
     <div class="field"><label>タブ3（カレンダー）</label><input id="tn_cal" placeholder="Calendar"></div>
     <div class="field"><label>タブ4（メモ）</label><input id="tn_notes" placeholder="Notes"></div>
     <div class="field"><label>タブ（Investment）</label><input id="tn_invest" placeholder="Investment"></div>
+    <div class="field"><label>タブ（Packing）</label><input id="tn_packing" placeholder="Packing"></div>
     <p class="hint" style="margin-top:14px">タブの並び順を変更できます（▲▼で移動）。</p>
     <div id="tabOrderList"></div>
     <p class="hint" style="margin-top:14px">Todayの予定で使う「定型」を編集できます（起床・就寝・食事など）。</p>
@@ -726,6 +735,9 @@ let today=load(K_TODAY,{});   // { "2026-07-19": {todo:[{text,done}], plan:[{id,
 let reminders=load(K_REMIND,[]);   // 毎日出る「心がけ」（文字列の配列）
 let dayDefaults=load(K_DAYDEF,[]);   // 曜日別デフォルト予定 [{id,days:[1..5],label,start,end,cat}]
 const K_INV="routine_invest_v1",K_INVCHK="routine_invest_checks_v1",K_INVEV="routine_invest_events_v1",K_INVTODAY="routine_invest_today_v1";
+const K_PACK="routine_packing_v1",K_PACKTMPL="routine_packing_templates_v1";
+let packing=load(K_PACK,[]);   // 持ち物リスト [{id,title,date,sections:[{name,items:[{id,label,note,checked}]}],updatedAt,archived}]
+let packTemplates=load(K_PACKTMPL,[]);   // テンプレ [{id,title,sections:[...]}]
 let invItems=load(K_INV,[]);   // ルーチンでやること [{id,label,freq,days,date,memo}]
 let invChecks=load(K_INVCHK,{});   // {date:{id:true}}
 let invEvents=load(K_INVEV,{});   // {"2026-07-15":[{id,label}]}
@@ -846,6 +858,8 @@ async function pull(){
       if(Array.isArray(s.reminders)){reminders=s.reminders;lset(K_REMIND,reminders);}
       if(Array.isArray(s.daydef)){dayDefaults=s.daydef;lset(K_DAYDEF,dayDefaults);}
       if(Array.isArray(s.inv)){invItems=s.inv;lset(K_INV,invItems);}
+      if(Array.isArray(s.packing)){packing=s.packing;lset(K_PACK,packing);}
+      if(Array.isArray(s.packtmpl)){packTemplates=s.packtmpl;lset(K_PACKTMPL,packTemplates);}
       if(s.invchk){invChecks=s.invchk;lset(K_INVCHK,invChecks);}
       if(s.invev){invEvents=s.invev;lset(K_INVEV,invEvents);}
       if(s.invtoday){invToday=s.invtoday;lset(K_INVTODAY,invToday);}
@@ -864,6 +878,7 @@ async function pull(){
       if(document.getElementById("viewNotes").style.display!=="none")renderNotes();
       if(document.getElementById("viewToday").style.display!=="none")tRender();
       if(document.getElementById("viewInvest").style.display!=="none")invRender();
+      if(document.getElementById("viewPacking").style.display!=="none")packRender();
     }else{setSync("err","応答エラー");}
   }catch(e){setSync("err","オフライン（ローカルに保存中）");}
 }
@@ -880,7 +895,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,packing:packing,packtmpl:packTemplates,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -1133,25 +1148,28 @@ document.getElementById("g_add").onclick=()=>{
 const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElementById("viewCal");
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
-  const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday"),vi=document.getElementById("viewInvest");
+  const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday"),vi=document.getElementById("viewInvest"),vp=document.getElementById("viewPacking");
   viewCheck.style.display=which==="check"?"block":"none";
   vw.style.display=which==="workout"?"block":"none";
   viewCal.style.display=which==="cal"?"block":"none";
   vn.style.display=which==="notes"?"block":"none";
   vt.style.display=which==="today"?"block":"none";
   vi.style.display=which==="invest"?"block":"none";
+  vp.style.display=which==="packing"?"block":"none";
   tabCheck.classList.toggle("on",which==="check");
   document.getElementById("tabToday").classList.toggle("on",which==="today");
   document.getElementById("tabWorkout").classList.toggle("on",which==="workout");
   tabCal.classList.toggle("on",which==="cal");
   document.getElementById("tabNotes").classList.toggle("on",which==="notes");
   document.getElementById("tabInvest").classList.toggle("on",which==="invest");
+  document.getElementById("tabPacking").classList.toggle("on",which==="packing");
   if(which==="check")render();
   if(which==="cal")renderCal();
   if(which==="workout"){wCur=new Date(cur);wRender();}
   if(which==="notes")renderNotes();
   if(which==="today"){tCur=new Date(cur);tRender();}
   if(which==="invest"){invCur=new Date(cur);invRender();}
+  if(which==="packing")packRender();
   // 選択タブが画面外なら、見える位置までスクロール
   const activeBtn=document.getElementById(TAB_BTN_ID[which]);
   if(activeBtn&&activeBtn.scrollIntoView)activeBtn.scrollIntoView({inline:"nearest",block:"nearest"});
@@ -1161,6 +1179,7 @@ tabCal.onclick=()=>showTab("cal");
 document.getElementById("tabWorkout").onclick=()=>showTab("workout");
 document.getElementById("tabNotes").onclick=()=>showTab("notes");
 document.getElementById("tabInvest").onclick=()=>showTab("invest");
+document.getElementById("tabPacking").onclick=()=>showTab("packing");
 document.getElementById("tabToday").onclick=()=>showTab("today");
 
 function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -2045,6 +2064,24 @@ document.getElementById("ivBulkAdd").onclick=()=>{
   if(added&&!skipped)ivBulkDlg.close();
 };
 
+/* ---------- Packing tab (step1: データ構造と同期) ---------- */
+function packProgress(list){
+  let total=0,done=0;
+  (list.sections||[]).forEach(s=>(s.items||[]).forEach(it=>{total++;if(it.checked)done++;}));
+  return {done,total};
+}
+function packRender(){
+  const box=document.getElementById("packList");if(!box)return;box.innerHTML="";
+  if(!packing.length){box.innerHTML='<div class="notes-empty">まだ持ち物リストがありません。（取り込み・作成UIは次段階で追加します）</div>';return;}
+  const sorted=packing.slice().filter(p=>!p.archived).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+  sorted.forEach(p=>{
+    const pr=packProgress(p);
+    const c=document.createElement("div");c.className="notecard";
+    c.innerHTML=`<div class="nt">${esc(p.title||"(無題)")}</div><div class="nd">${esc(p.date||"")} ・ ${pr.done} / ${pr.total}</div>`;
+    box.appendChild(c);
+  });
+}
+
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");
 document.getElementById("openSync").onclick=()=>{settingsDlg.close();document.getElementById("f_url").value=gasUrl||"";document.getElementById("cfgStatus").textContent="";cfgDlg.showModal();};
@@ -2072,7 +2109,7 @@ applyTheme(theme);
 function setTheme(t){theme=t;lset("routine_theme_v1",theme);applyTheme(theme);paintThemePick();}
 document.getElementById("themeToggle").onclick=()=>setTheme(theme==="light"?"dark":"light");
 
-const TAB_DEFAULTS={check:"Routine",today:"Today",workout:"Training",cal:"Calendar",notes:"Notes",invest:"Investment"};
+const TAB_DEFAULTS={check:"Routine",today:"Today",workout:"Training",cal:"Calendar",notes:"Notes",invest:"Investment",packing:"Packing"};
 let tabNames=load("routine_tabnames_v1",{});
 function applyTabNames(){
   document.getElementById("tabCheck").textContent=tabNames.check||TAB_DEFAULTS.check;
@@ -2081,11 +2118,12 @@ function applyTabNames(){
   document.getElementById("tabCal").textContent=tabNames.cal||TAB_DEFAULTS.cal;
   document.getElementById("tabNotes").textContent=tabNames.notes||TAB_DEFAULTS.notes;
   document.getElementById("tabInvest").textContent=tabNames.invest||TAB_DEFAULTS.invest;
+  document.getElementById("tabPacking").textContent=tabNames.packing||TAB_DEFAULTS.packing;
 }
 applyTabNames();
 
-const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes","invest"];
-const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest"};
+const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes","invest","packing"];
+const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest",packing:"tabPacking"};
 let tabOrder=load("routine_taborder_v1",null);
 if(!Array.isArray(tabOrder)||!tabOrder.length){tabOrder=TAB_ORDER_DEFAULT.slice();}
 // 新しいタブが増えたら、既存の並び順の末尾に足す（既存の並びは尊重）
@@ -2120,6 +2158,7 @@ document.getElementById("settingsBtn").onclick=()=>{
   document.getElementById("tn_cal").value=tabNames.cal||"";
   document.getElementById("tn_notes").value=tabNames.notes||"";
   document.getElementById("tn_invest").value=tabNames.invest||"";
+  document.getElementById("tn_packing").value=tabNames.packing||"";
   buildPresetList();
   buildTabOrder();
   buildCatList();
@@ -2245,13 +2284,14 @@ document.getElementById("settingsSave").onclick=()=>{
     cal:document.getElementById("tn_cal").value.trim(),
     notes:document.getElementById("tn_notes").value.trim(),
     invest:document.getElementById("tn_invest").value.trim(),
+    packing:document.getElementById("tn_packing").value.trim(),
   };
   Object.keys(tabNames).forEach(k=>{if(!tabNames[k])delete tabNames[k];});
   lset("routine_tabnames_v1",tabNames);applyTabNames();settingsDlg.close();
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v4.2";
+const APP_VERSION="OS v4.3";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

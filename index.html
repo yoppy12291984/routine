@@ -403,8 +403,8 @@
   <div class="noteshead">
     <button class="btn-primary" id="noteAdd">＋ メモを追加</button>
     <div class="viewtoggle">
-      <button id="noteCardBtn" class="vt on">カード</button>
       <button id="noteTableBtn" class="vt">表</button>
+      <button id="noteCardBtn" class="vt on">カード</button>
     </div>
   </div>
   <div id="notesBox"></div>
@@ -459,7 +459,7 @@
 <div id="viewPacking" style="display:none">
   <div id="packListView">
     <div class="tsection">
-      <div class="tsec-h" style="display:flex;align-items:center">持ち物 <span class="viewtoggle"><button class="vt" id="packCardBtn">カード</button><button class="vt" id="packTableBtn">表</button></span></div>
+      <div class="tsec-h" style="display:flex;align-items:center">持ち物 <span class="viewtoggle"><button class="vt" id="packTableBtn">表</button><button class="vt" id="packCardBtn">カード</button></span></div>
       <div id="packList"></div>
       <div class="plan-tools" style="margin-top:8px">
         <button class="btn-primary" id="packImport">貼り付けて取り込む</button>
@@ -2641,7 +2641,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v4.8";
+const APP_VERSION="OS v4.9";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

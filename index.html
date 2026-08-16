@@ -222,6 +222,9 @@
   .tsec-h .life-secdel{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
   .life-mv{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 5px;flex:none}
   .life-mv:disabled{opacity:.25;cursor:default}
+  .life-tg{background:none;border:1px solid var(--line);color:var(--ink-faint);cursor:pointer;font-size:12px;border-radius:5px;padding:2px 7px;flex:none;font-weight:700}
+  .life-tg.on{background:var(--accent2);border-color:var(--accent2);color:#04201b}
+  .life-cost{font-size:11px;color:var(--accent);border:1px solid var(--line);border-radius:5px;padding:1px 7px;cursor:pointer;flex:none;white-space:nowrap}
   .rem-item .life-tofront{background:none;border:1px solid var(--accent2);color:var(--accent2);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .rmv{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .rm{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
@@ -901,7 +904,7 @@ if(!Array.isArray(lifehack.sections)){
   ];
   delete lifehack.dreams;delete lifehack.money;delete lifehack.travel;delete lifehack.family;
 }
-lifehack.sections.forEach(s=>{if(!Array.isArray(s.items))s.items=[];if(!s.id)s.id="ls"+Math.random().toString(36).slice(2,7);});
+lifehack.sections.forEach(s=>{if(!Array.isArray(s.items))s.items=[];if(!s.id)s.id="ls"+Math.random().toString(36).slice(2,7);if(typeof s.ranked!=="boolean")s.ranked=false;if(typeof s.cost!=="boolean")s.cost=false;s.items=s.items.map(it=>typeof it==="string"?{t:it}:(it&&typeof it==="object"?{t:it.t||"",cost:it.cost||""}:{t:String(it)}));});
 lset(K_LIFE,lifehack);
 let packing=load(K_PACK,[]);   // 持ち物リスト [{id,title,date,sections:[{name,items:[{id,label,note,checked}]}],updatedAt,archived}]
 let packTemplates=load(K_PACKTMPL,[]);   // テンプレ [{id,title,sections:[...]}]
@@ -1027,7 +1030,7 @@ async function pull(){
       if(Array.isArray(s.inv)){invItems=s.inv;lset(K_INV,invItems);}
       if(Array.isArray(s.packing)){packing=s.packing;lset(K_PACK,packing);}
       if(Array.isArray(s.packtmpl)){packTemplates=s.packtmpl;lset(K_PACKTMPL,packTemplates);}
-      if(s.lifehack&&typeof s.lifehack==="object"){lifehack=s.lifehack;if(!Array.isArray(lifehack.fronts))lifehack.fronts=[];if(!Array.isArray(lifehack.sections))lifehack.sections=[];lifehack.sections.forEach(x=>{if(!Array.isArray(x.items))x.items=[];if(!x.id)x.id="ls"+Math.random().toString(36).slice(2,7);});lset(K_LIFE,lifehack);}
+      if(s.lifehack&&typeof s.lifehack==="object"){lifehack=s.lifehack;if(!Array.isArray(lifehack.fronts))lifehack.fronts=[];if(!Array.isArray(lifehack.sections))lifehack.sections=[];lifehack.sections.forEach(x=>{if(!Array.isArray(x.items))x.items=[];if(!x.id)x.id="ls"+Math.random().toString(36).slice(2,7);if(typeof x.ranked!=="boolean")x.ranked=false;if(typeof x.cost!=="boolean")x.cost=false;x.items=x.items.map(it=>typeof it==="string"?{t:it}:(it&&typeof it==="object"?{t:it.t||"",cost:it.cost||""}:{t:String(it)}));});lset(K_LIFE,lifehack);}
       if(s.invchk){invChecks=s.invchk;lset(K_INVCHK,invChecks);}
       if(s.invev){invEvents=s.invev;lset(K_INVEV,invEvents);}
       if(s.invtoday){invToday=s.invtoday;lset(K_INVTODAY,invToday);}
@@ -2544,13 +2547,17 @@ function lifeRender(){
   const S=lifehack.sections;
   S.forEach((sec,si)=>{
     const box=document.createElement("div");box.className="tsection";
-    // 見出し（編集・並び替え・削除）
-    const h=document.createElement("div");h.className="tsec-h";h.style.display="flex";h.style.alignItems="center";h.style.gap="6px";
-    h.innerHTML=`<span class="rtx" style="flex:1;cursor:pointer">${esc(sec.name||"（名称未設定）")}</span>`+
+    // 見出し（編集・並び替え・削除）＋番号/費用トグル
+    const h=document.createElement("div");h.className="tsec-h";h.style.display="flex";h.style.alignItems="center";h.style.gap="6px";h.style.flexWrap="wrap";
+    h.innerHTML=`<span class="rtx" style="flex:1;min-width:80px;cursor:pointer">${esc(sec.name||"（名称未設定）")}</span>`+
+      `<button class="life-tg${sec.ranked?" on":""}" data-a="rank" title="番号を付ける">№</button>`+
+      `<button class="life-tg${sec.cost?" on":""}" data-a="cost" title="費用欄を付ける">¥</button>`+
       `<button class="life-mv" data-a="up"${si===0?" disabled":""}>▲</button>`+
       `<button class="life-mv" data-a="down"${si===S.length-1?" disabled":""}>▼</button>`+
-      `<button class="rmv life-secedit">名称</button><button class="rm life-secdel">×</button>`;
-    h.querySelector(".rtx").onclick=h.querySelector(".life-secedit").onclick=()=>{const nv=prompt("大項目の名称",sec.name||"");if(nv===null)return;const v=nv.trim();if(v){sec.name=v;lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+      `<button class="rm life-secdel">×</button>`;
+    h.querySelector(".rtx").onclick=()=>{const nv=prompt("大項目の名称",sec.name||"");if(nv===null)return;const v=nv.trim();if(v){sec.name=v;lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+    h.querySelector('[data-a="rank"]').onclick=()=>{sec.ranked=!sec.ranked;lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+    h.querySelector('[data-a="cost"]').onclick=()=>{sec.cost=!sec.cost;lset(K_LIFE,lifehack);lifeRender();pushSoon();};
     h.querySelector('[data-a="up"]').onclick=()=>{if(si>0){[S[si-1],S[si]]=[S[si],S[si-1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
     h.querySelector('[data-a="down"]').onclick=()=>{if(si<S.length-1){[S[si+1],S[si]]=[S[si],S[si+1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
     h.querySelector(".life-secdel").onclick=()=>{if(confirm(`「${sec.name}」を中身ごと削除しますか？`)){S.splice(si,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
@@ -2558,19 +2565,22 @@ function lifeRender(){
     // 中身
     const list=document.createElement("div");
     if(!sec.items.length){list.innerHTML='<div class="rem-empty">下の欄に入力してEnterで追加できます。</div>';}
-    sec.items.forEach((t,ii)=>{
+    sec.items.forEach((it,ii)=>{
       const row=document.createElement("div");row.className="rem-item";
-      row.innerHTML=`<span class="bullet">・</span><span class="rtx">${esc(t)}</span>`+
+      const lead=sec.ranked?`<span class="lifenum">${ii+1}</span>`:'<span class="bullet">・</span>';
+      const costTag=sec.cost?`<span class="life-cost">${it.cost?esc(it.cost):"費用"}</span>`:"";
+      row.innerHTML=`${lead}<span class="rtx">${esc(it.t)}</span>${costTag}`+
         `<button class="life-mv" data-a="iup"${ii===0?" disabled":""}>▲</button>`+
         `<button class="life-mv" data-a="idown"${ii===sec.items.length-1?" disabled":""}>▼</button>`+
         `<button class="rmv life-tofront" title="前線にする">前線へ</button>`+
         `<button class="rm">×</button>`;
-      row.querySelector(".rtx").onclick=()=>{const nv=prompt("編集",t);if(nv===null)return;const v=nv.trim();if(!v){sec.items.splice(ii,1);}else{sec.items[ii]=v;}lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+      row.querySelector(".rtx").onclick=()=>{const nv=prompt("編集",it.t);if(nv===null)return;const v=nv.trim();if(!v){sec.items.splice(ii,1);}else{it.t=v;}lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+      if(sec.cost){const ce=row.querySelector(".life-cost");if(ce)ce.onclick=()=>{const nv=prompt("費用（例：¥30,000、5万円くらい）",it.cost||"");if(nv===null)return;it.cost=nv.trim();lset(K_LIFE,lifehack);lifeRender();pushSoon();};}
       row.querySelector('[data-a="iup"]').onclick=()=>{if(ii>0){[sec.items[ii-1],sec.items[ii]]=[sec.items[ii],sec.items[ii-1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
       row.querySelector('[data-a="idown"]').onclick=()=>{if(ii<sec.items.length-1){[sec.items[ii+1],sec.items[ii]]=[sec.items[ii],sec.items[ii+1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
       row.querySelector(".life-tofront").onclick=()=>{
         if(lifehack.fronts.length>=3&&!confirm("前線は3つが目安です。それでも前線に追加しますか？"))return;
-        lifehack.fronts.push(t);sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();
+        lifehack.fronts.push(it.t);sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();
       };
       row.querySelector(".rm").onclick=()=>{sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       list.appendChild(row);
@@ -2579,7 +2589,7 @@ function lifeRender(){
     // 追加欄
     const add=document.createElement("div");add.className="todo-add";
     const inp=document.createElement("input");inp.placeholder="入力してEnterで追加";
-    inp.onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;sec.items.push(v);e.target.value="";lset(K_LIFE,lifehack);lifeRender();pushSoon();
+    inp.onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;sec.items.push({t:v,cost:""});e.target.value="";lset(K_LIFE,lifehack);lifeRender();pushSoon();
       setTimeout(()=>{const again=document.querySelectorAll("#lifeSections .todo-add input")[si];if(again)again.focus();},0);}};
     add.appendChild(inp);box.appendChild(add);
     wrap.appendChild(box);
@@ -2601,15 +2611,28 @@ function lifeParseImport(text){
     if(m=line.match(/^#{1,3}\s+(.+)$/)){
       const name=m[1].trim();
       if(isFront(name)){cur={front:true};}
-      else{cur={name,items:[]};res.sections.push(cur);}
+      else{cur={name,items:[],ranked:false,cost:false};res.sections.push(cur);}
       continue;
     }
-    if(m=line.match(/^[-*・]\s*(?:\[[ xX✓]\]\s*)?(.+)$/)){
-      let body=m[1].trim();
-      body=body.replace(/\s*::\s*.+$/,"").replace(/^\d+\.\s*/,"").trim();
+    // 番号付き（1. 2. …）または箇条書き
+    const numbered=line.match(/^(\d+)[.\)]\s*(.+)$/);
+    const bulleted=line.match(/^[-*・]\s*(?:\[[ xX✓]\]\s*)?(.+)$/);
+    if(numbered||bulleted){
+      let body=(numbered?numbered[2]:bulleted[1]).trim();
+      // 費用の抽出：末尾の（¥…）(￥…)(…円) または :: 費用
+      let cost="";
+      let cm=body.match(/[（(]\s*([¥￥]?\s*[\d,]+\s*円?[^）)]*)\s*[）)]\s*$/);
+      if(cm){cost=cm[1].trim();body=body.replace(/[（(][^）)]*[）)]\s*$/,"").trim();}
+      const dm=body.match(/\s*::\s*(.+)$/);
+      if(dm){if(!cost)cost=dm[1].trim();body=body.replace(/\s*::\s*.+$/,"").trim();}
       if(!body)continue;
       if(cur&&cur.front){res.fronts.push(body);}
-      else{if(!cur){cur={name:"",items:[]};res.sections.push(cur);}cur.items.push(body);}
+      else{
+        if(!cur){cur={name:"",items:[],ranked:false,cost:false};res.sections.push(cur);}
+        if(numbered)cur.ranked=true;
+        if(cost)cur.cost=true;
+        cur.items.push({t:body,cost});
+      }
       continue;
     }
   }
@@ -2634,8 +2657,9 @@ document.getElementById("lifeImportPreviewBtn").onclick=()=>{
   let html='<div style="border:1px solid var(--line);border-radius:9px;padding:11px 12px;background:var(--panel)">';
   if(parsed.fronts.length){html+='<div style="font-size:12px;color:var(--accent2);font-weight:700;margin-bottom:3px">前線</div>';parsed.fronts.forEach(f=>{html+=`<div style="font-size:13px;padding:1px 0">・${esc(f)}</div>`;});}
   parsed.sections.forEach(s=>{
-    html+=`<div style="font-size:12px;color:var(--ink-dim);font-weight:700;margin:8px 0 3px">${esc(s.name||"（名称なし）")}（${s.items.length}）</div>`;
-    s.items.forEach(it=>{html+=`<div style="font-size:13px;padding:1px 0">・${esc(it)}</div>`;});
+    const tags=[s.ranked?"№":"",s.cost?"¥":""].filter(Boolean).join(" ");
+    html+=`<div style="font-size:12px;color:var(--ink-dim);font-weight:700;margin:8px 0 3px">${esc(s.name||"（名称なし）")}（${s.items.length}）${tags?` <span class="hint">${tags}</span>`:""}</div>`;
+    s.items.forEach((it,i)=>{html+=`<div style="font-size:13px;padding:1px 0">${s.ranked?(i+1)+". ":"・"}${esc(it.t)}${it.cost?` <span class="hint">（${esc(it.cost)}）</span>`:""}</div>`;});
   });
   html+=`<div class="hint" style="margin-top:8px">前線 ${parsed.fronts.length}・大項目 ${parsed.sections.length}・合計 ${total} 項目</div></div>`;
   box.innerHTML=html;
@@ -2647,14 +2671,15 @@ document.getElementById("lifeImportSave").onclick=()=>{
   if(mode==="replace"){
     if(!confirm("今のLifehackの内容を、取り込む内容で丸ごと置き換えます。よろしいですか？"))return;
     lifehack.fronts=lifeImportParsed.fronts.slice();
-    lifehack.sections=lifeImportParsed.sections.map(s=>({id:"ls"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:s.name,items:s.items.slice()}));
+    lifehack.sections=lifeImportParsed.sections.map(s=>({id:"ls"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:s.name,ranked:!!s.ranked,cost:!!s.cost,items:s.items.map(x=>({t:x.t,cost:x.cost||""}))}));
   }else{
     // 追加：前線はそのまま足す。大項目は同名があればそこに足し、同一項目は重複させない
     lifeImportParsed.fronts.forEach(f=>{if(!lifehack.fronts.includes(f))lifehack.fronts.push(f);});
     lifeImportParsed.sections.forEach(s=>{
       let tgt=lifehack.sections.find(x=>(x.name||"")===(s.name||""));
-      if(!tgt){tgt={id:"ls"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:s.name,items:[]};lifehack.sections.push(tgt);}
-      s.items.forEach(it=>{if(!tgt.items.includes(it))tgt.items.push(it);});
+      if(!tgt){tgt={id:"ls"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:s.name,ranked:!!s.ranked,cost:!!s.cost,items:[]};lifehack.sections.push(tgt);}
+      else{if(s.ranked)tgt.ranked=true;if(s.cost)tgt.cost=true;}
+      s.items.forEach(it=>{const ex=tgt.items.find(y=>y.t===it.t);if(ex){if(it.cost&&!ex.cost)ex.cost=it.cost;}else{tgt.items.push({t:it.t,cost:it.cost||""});}});
     });
   }
   lset(K_LIFE,lifehack);lifeImportDlg.close();lifeRender();pushSoon();
@@ -2667,7 +2692,12 @@ function lifeBuildExport(){
   let body="【状態】最終更新："+ymd+"\n";
   lifehack.sections.forEach(sec=>{
     body+="■ "+(sec.name||"（名称未設定）")+"：\n";
-    body+=(sec.items.length?sec.items.map(x=>"- "+x).join("\n"):"- （未記入）")+"\n";
+    if(!sec.items.length){body+="- （未記入）\n";}
+    else{body+=sec.items.map((x,i)=>{
+      const lead=sec.ranked?((i+1)+". "):"- ";
+      const c=(sec.cost&&x.cost)?`（${x.cost}）`:"";
+      return lead+x.t+c;
+    }).join("\n")+"\n";}
   });
   body+="■ 前線（実行中・最大3）：\n"+fronts;
   // 今のルーチン（Routineタブの習慣）も渡す：間引きの相談に使えるように
@@ -2908,7 +2938,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.6";
+const APP_VERSION="OS v5.7";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

@@ -220,6 +220,9 @@
   .rem-item .lifenum{flex:none;width:20px;height:20px;border-radius:50%;background:var(--accent2);color:#04201b;font-size:11px;font-weight:700;display:grid;place-items:center}
   .tsec-h .life-secedit{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 8px;flex:none;font-weight:400;letter-spacing:0;text-transform:none}
   .tsec-h .life-secdel{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
+  .life-mv{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 5px;flex:none}
+  .life-mv:disabled{opacity:.25;cursor:default}
+  .rem-item .life-tofront{background:none;border:1px solid var(--accent2);color:var(--accent2);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .rmv{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .rm{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
   .rem-empty{color:var(--ink-faint);font-size:13px;padding:8px 2px}
@@ -2520,21 +2523,37 @@ function lifeRender(){
   lifeFrontRender();
   document.getElementById("lifeFrontWarn").style.display=(lifehack.fronts.length>3)?"block":"none";
   const wrap=document.getElementById("lifeSections");wrap.innerHTML="";
-  lifehack.sections.forEach((sec,si)=>{
+  const S=lifehack.sections;
+  S.forEach((sec,si)=>{
     const box=document.createElement("div");box.className="tsection";
-    // 見出し（編集可能）
-    const h=document.createElement("div");h.className="tsec-h";h.style.display="flex";h.style.alignItems="center";h.style.gap="8px";
-    h.innerHTML=`<span class="rtx" style="flex:1;cursor:pointer">${esc(sec.name||"（名称未設定）")}</span><button class="rmv life-secedit">名称</button><button class="rm life-secdel">×</button>`;
+    // 見出し（編集・並び替え・削除）
+    const h=document.createElement("div");h.className="tsec-h";h.style.display="flex";h.style.alignItems="center";h.style.gap="6px";
+    h.innerHTML=`<span class="rtx" style="flex:1;cursor:pointer">${esc(sec.name||"（名称未設定）")}</span>`+
+      `<button class="life-mv" data-a="up"${si===0?" disabled":""}>▲</button>`+
+      `<button class="life-mv" data-a="down"${si===S.length-1?" disabled":""}>▼</button>`+
+      `<button class="rmv life-secedit">名称</button><button class="rm life-secdel">×</button>`;
     h.querySelector(".rtx").onclick=h.querySelector(".life-secedit").onclick=()=>{const nv=prompt("大項目の名称",sec.name||"");if(nv===null)return;const v=nv.trim();if(v){sec.name=v;lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
-    h.querySelector(".life-secdel").onclick=()=>{if(confirm(`「${sec.name}」を中身ごと削除しますか？`)){lifehack.sections.splice(si,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+    h.querySelector('[data-a="up"]').onclick=()=>{if(si>0){[S[si-1],S[si]]=[S[si],S[si-1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+    h.querySelector('[data-a="down"]').onclick=()=>{if(si<S.length-1){[S[si+1],S[si]]=[S[si],S[si+1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+    h.querySelector(".life-secdel").onclick=()=>{if(confirm(`「${sec.name}」を中身ごと削除しますか？`)){S.splice(si,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
     box.appendChild(h);
     // 中身
     const list=document.createElement("div");
     if(!sec.items.length){list.innerHTML='<div class="rem-empty">下の欄に入力してEnterで追加できます。</div>';}
     sec.items.forEach((t,ii)=>{
       const row=document.createElement("div");row.className="rem-item";
-      row.innerHTML=`<span class="bullet">・</span><span class="rtx">${esc(t)}</span><button class="rm">×</button>`;
+      row.innerHTML=`<span class="bullet">・</span><span class="rtx">${esc(t)}</span>`+
+        `<button class="life-mv" data-a="iup"${ii===0?" disabled":""}>▲</button>`+
+        `<button class="life-mv" data-a="idown"${ii===sec.items.length-1?" disabled":""}>▼</button>`+
+        `<button class="rmv life-tofront" title="前線にする">前線へ</button>`+
+        `<button class="rm">×</button>`;
       row.querySelector(".rtx").onclick=()=>{const nv=prompt("編集",t);if(nv===null)return;const v=nv.trim();if(!v){sec.items.splice(ii,1);}else{sec.items[ii]=v;}lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+      row.querySelector('[data-a="iup"]').onclick=()=>{if(ii>0){[sec.items[ii-1],sec.items[ii]]=[sec.items[ii],sec.items[ii-1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+      row.querySelector('[data-a="idown"]').onclick=()=>{if(ii<sec.items.length-1){[sec.items[ii+1],sec.items[ii]]=[sec.items[ii],sec.items[ii+1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+      row.querySelector(".life-tofront").onclick=()=>{
+        if(lifehack.fronts.length>=3&&!confirm("前線は3つが目安です。それでも前線に追加しますか？"))return;
+        lifehack.fronts.push(t);sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();
+      };
       row.querySelector(".rm").onclick=()=>{sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       list.appendChild(row);
     });
@@ -2543,7 +2562,6 @@ function lifeRender(){
     const add=document.createElement("div");add.className="todo-add";
     const inp=document.createElement("input");inp.placeholder="入力してEnterで追加";
     inp.onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;sec.items.push(v);e.target.value="";lset(K_LIFE,lifehack);lifeRender();pushSoon();
-      // 追加後、同じ欄にフォーカスを戻す
       setTimeout(()=>{const again=document.querySelectorAll("#lifeSections .todo-add input")[si];if(again)again.focus();},0);}};
     add.appendChild(inp);box.appendChild(add);
     wrap.appendChild(box);
@@ -2564,6 +2582,16 @@ function lifeBuildExport(){
     body+=(sec.items.length?sec.items.map(x=>"- "+x).join("\n"):"- （未記入）")+"\n";
   });
   body+="■ 前線（実行中・最大3）：\n"+fronts;
+  // 今のルーチン（Routineタブの習慣）も渡す：間引きの相談に使えるように
+  try{
+    if(Array.isArray(items)&&items.length){
+      const gname={};(GROUPS||[]).forEach(g=>{gname[g.id]=g.name;});
+      const byg={};
+      items.forEach(it=>{const g=gname[it.group]||"その他";(byg[g]=byg[g]||[]).push(it.label);});
+      body+="\n■ 今のルーチン（習慣）：";
+      Object.keys(byg).forEach(g=>{body+="\n【"+g+"】"+byg[g].join("、");});
+    }
+  }catch(e){}
   let wants="";
   try{const td=(today[iso(new Date())]||{}).todo||[];wants=td.filter(t=>t.text).map(t=>"- "+t.text).join("\n");}catch(e){}
   if(wants)body+="\n■ 今日のやりたいこと：\n"+wants;
@@ -2792,7 +2820,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.4";
+const APP_VERSION="OS v5.5";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

@@ -225,6 +225,12 @@
   .life-tg{background:none;border:1px solid var(--line);color:var(--ink-faint);cursor:pointer;font-size:12px;border-radius:5px;padding:2px 7px;flex:none;font-weight:700}
   .life-tg.on{background:var(--accent2);border-color:var(--accent2);color:#04201b}
   .life-cost{font-size:11px;color:var(--accent);border:1px solid var(--line);border-radius:5px;padding:1px 7px;cursor:pointer;flex:none;white-space:nowrap}
+  .rem-item .life-buy{background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 6px;flex:none}
+  .life-bought-h{font-size:12px;color:var(--ink-faint);cursor:pointer;padding:8px 2px 4px;user-select:none}
+  .life-bought-item{opacity:.6}
+  .life-bought-item .rtx{text-decoration:line-through}
+  .life-bought-item .bullet{color:var(--done)}
+  .rem-item .life-unbuy{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .life-tofront{background:none;border:1px solid var(--accent2);color:var(--accent2);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .rmv{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .rm{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
@@ -904,7 +910,7 @@ if(!Array.isArray(lifehack.sections)){
   ];
   delete lifehack.dreams;delete lifehack.money;delete lifehack.travel;delete lifehack.family;
 }
-lifehack.sections.forEach(s=>{if(!Array.isArray(s.items))s.items=[];if(!s.id)s.id="ls"+Math.random().toString(36).slice(2,7);if(typeof s.ranked!=="boolean")s.ranked=false;if(typeof s.cost!=="boolean")s.cost=false;s.items=s.items.map(it=>typeof it==="string"?{t:it}:(it&&typeof it==="object"?{t:it.t||"",cost:it.cost||""}:{t:String(it)}));});
+lifehack.sections.forEach(s=>{if(!Array.isArray(s.items))s.items=[];if(!s.id)s.id="ls"+Math.random().toString(36).slice(2,7);if(typeof s.ranked!=="boolean")s.ranked=false;if(typeof s.cost!=="boolean")s.cost=false;s.items=s.items.map(it=>typeof it==="string"?{t:it}:(it&&typeof it==="object"?Object.assign({t:it.t||"",cost:it.cost||""},it.bought?{bought:true,boughtAt:it.boughtAt||""}:{}):{t:String(it)}));});
 lset(K_LIFE,lifehack);
 let packing=load(K_PACK,[]);   // 持ち物リスト [{id,title,date,sections:[{name,items:[{id,label,note,checked}]}],updatedAt,archived}]
 let packTemplates=load(K_PACKTMPL,[]);   // テンプレ [{id,title,sections:[...]}]
@@ -1030,7 +1036,7 @@ async function pull(){
       if(Array.isArray(s.inv)){invItems=s.inv;lset(K_INV,invItems);}
       if(Array.isArray(s.packing)){packing=s.packing;lset(K_PACK,packing);}
       if(Array.isArray(s.packtmpl)){packTemplates=s.packtmpl;lset(K_PACKTMPL,packTemplates);}
-      if(s.lifehack&&typeof s.lifehack==="object"){lifehack=s.lifehack;if(!Array.isArray(lifehack.fronts))lifehack.fronts=[];if(!Array.isArray(lifehack.sections))lifehack.sections=[];lifehack.sections.forEach(x=>{if(!Array.isArray(x.items))x.items=[];if(!x.id)x.id="ls"+Math.random().toString(36).slice(2,7);if(typeof x.ranked!=="boolean")x.ranked=false;if(typeof x.cost!=="boolean")x.cost=false;x.items=x.items.map(it=>typeof it==="string"?{t:it}:(it&&typeof it==="object"?{t:it.t||"",cost:it.cost||""}:{t:String(it)}));});lset(K_LIFE,lifehack);}
+      if(s.lifehack&&typeof s.lifehack==="object"){lifehack=s.lifehack;if(!Array.isArray(lifehack.fronts))lifehack.fronts=[];if(!Array.isArray(lifehack.sections))lifehack.sections=[];lifehack.sections.forEach(x=>{if(!Array.isArray(x.items))x.items=[];if(!x.id)x.id="ls"+Math.random().toString(36).slice(2,7);if(typeof x.ranked!=="boolean")x.ranked=false;if(typeof x.cost!=="boolean")x.cost=false;x.items=x.items.map(it=>typeof it==="string"?{t:it}:(it&&typeof it==="object"?Object.assign({t:it.t||"",cost:it.cost||""},it.bought?{bought:true,boughtAt:it.boughtAt||""}:{}):{t:String(it)}));});lset(K_LIFE,lifehack);}
       if(s.invchk){invChecks=s.invchk;lset(K_INVCHK,invChecks);}
       if(s.invev){invEvents=s.invev;lset(K_INVEV,invEvents);}
       if(s.invtoday){invToday=s.invtoday;lset(K_INVTODAY,invToday);}
@@ -2528,6 +2534,7 @@ document.getElementById("packImportSave").onclick=()=>{
 };
 
 /* ---------- Lifehack tab ---------- */
+const lifeBoughtOpen=new Set();
 function lifeFrontRender(){
   const box=document.getElementById("lifeFronts");box.innerHTML="";
   const arr=lifehack.fronts;
@@ -2562,30 +2569,57 @@ function lifeRender(){
     h.querySelector('[data-a="down"]').onclick=()=>{if(si<S.length-1){[S[si+1],S[si]]=[S[si],S[si+1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
     h.querySelector(".life-secdel").onclick=()=>{if(confirm(`「${sec.name}」を中身ごと削除しますか？`)){S.splice(si,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
     box.appendChild(h);
-    // 中身
+    // 中身（未購入と購入済みに分ける）
     const list=document.createElement("div");
-    if(!sec.items.length){list.innerHTML='<div class="rem-empty">下の欄に入力してEnterで追加できます。</div>';}
-    sec.items.forEach((it,ii)=>{
+    const activeItems=[],boughtItems=[];
+    sec.items.forEach((it,idx)=>{(it.bought?boughtItems:activeItems).push({it,idx});});
+    if(!activeItems.length&&!boughtItems.length){list.innerHTML='<div class="rem-empty">下の欄に入力してEnterで追加できます。</div>';}
+    activeItems.forEach((o,pos)=>{
+      const it=o.it,ii=o.idx;
       const row=document.createElement("div");row.className="rem-item";
-      const lead=sec.ranked?`<span class="lifenum">${ii+1}</span>`:'<span class="bullet">・</span>';
+      const lead=sec.ranked?`<span class="lifenum">${pos+1}</span>`:'<span class="bullet">・</span>';
       const costTag=sec.cost?`<span class="life-cost">${it.cost?esc(it.cost):"費用"}</span>`:"";
+      const buyBtn=sec.cost?`<button class="rmv life-buy" title="買った">買った</button>`:`<button class="rmv life-tofront" title="前線にする">前線へ</button>`;
       row.innerHTML=`${lead}<span class="rtx">${esc(it.t)}</span>${costTag}`+
-        `<button class="life-mv" data-a="iup"${ii===0?" disabled":""}>▲</button>`+
-        `<button class="life-mv" data-a="idown"${ii===sec.items.length-1?" disabled":""}>▼</button>`+
-        `<button class="rmv life-tofront" title="前線にする">前線へ</button>`+
-        `<button class="rm">×</button>`;
+        `<button class="life-mv" data-a="iup"${pos===0?" disabled":""}>▲</button>`+
+        `<button class="life-mv" data-a="idown"${pos===activeItems.length-1?" disabled":""}>▼</button>`+
+        buyBtn+`<button class="rm">×</button>`;
       row.querySelector(".rtx").onclick=()=>{const nv=prompt("編集",it.t);if(nv===null)return;const v=nv.trim();if(!v){sec.items.splice(ii,1);}else{it.t=v;}lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       if(sec.cost){const ce=row.querySelector(".life-cost");if(ce)ce.onclick=()=>{const nv=prompt("費用（例：¥30,000、5万円くらい）",it.cost||"");if(nv===null)return;it.cost=nv.trim();lset(K_LIFE,lifehack);lifeRender();pushSoon();};}
-      row.querySelector('[data-a="iup"]').onclick=()=>{if(ii>0){[sec.items[ii-1],sec.items[ii]]=[sec.items[ii],sec.items[ii-1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
-      row.querySelector('[data-a="idown"]').onclick=()=>{if(ii<sec.items.length-1){[sec.items[ii+1],sec.items[ii]]=[sec.items[ii],sec.items[ii+1]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
-      row.querySelector(".life-tofront").onclick=()=>{
-        if(lifehack.fronts.length>=3&&!confirm("前線は3つが目安です。それでも前線に追加しますか？"))return;
-        lifehack.fronts.push(it.t);sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();
-      };
+      // 並び替えは「未購入の中での前後」と入れ替える
+      const up=row.querySelector('[data-a="iup"]'),down=row.querySelector('[data-a="idown"]');
+      if(up)up.onclick=()=>{if(pos>0){const a=activeItems[pos-1].idx,b=ii;[sec.items[a],sec.items[b]]=[sec.items[b],sec.items[a]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+      if(down)down.onclick=()=>{if(pos<activeItems.length-1){const a=activeItems[pos+1].idx,b=ii;[sec.items[a],sec.items[b]]=[sec.items[b],sec.items[a]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+      const bb=row.querySelector(".life-buy");
+      if(bb)bb.onclick=()=>{it.bought=true;it.boughtAt=iso(new Date());lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+      const tf=row.querySelector(".life-tofront");
+      if(tf)tf.onclick=()=>{if(lifehack.fronts.length>=3&&!confirm("前線は3つが目安です。それでも前線に追加しますか？"))return;lifehack.fronts.push(it.t);sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       row.querySelector(".rm").onclick=()=>{sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       list.appendChild(row);
     });
     box.appendChild(list);
+    // 購入済み（折りたたみ）
+    if(boughtItems.length){
+      const open=lifeBoughtOpen.has(sec.id);
+      const bh=document.createElement("div");bh.className="life-bought-h";
+      bh.innerHTML=`<span>${open?"▾":"▸"} 購入済み（${boughtItems.length}）</span>`;
+      bh.onclick=()=>{if(open)lifeBoughtOpen.delete(sec.id);else lifeBoughtOpen.add(sec.id);lifeRender();};
+      box.appendChild(bh);
+      if(open){
+        const blist=document.createElement("div");
+        boughtItems.forEach(o=>{
+          const it=o.it,ii=o.idx;
+          const row=document.createElement("div");row.className="rem-item life-bought-item";
+          const costTag=sec.cost&&it.cost?`<span class="life-cost">${esc(it.cost)}</span>`:"";
+          row.innerHTML=`<span class="bullet">✓</span><span class="rtx">${esc(it.t)}</span>${it.boughtAt?`<span class="hint">${esc(it.boughtAt)}</span>`:""}${costTag}`+
+            `<button class="rmv life-unbuy" title="未購入に戻す">戻す</button><button class="rm">×</button>`;
+          row.querySelector(".life-unbuy").onclick=()=>{delete it.bought;delete it.boughtAt;lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+          row.querySelector(".rm").onclick=()=>{sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+          blist.appendChild(row);
+        });
+        box.appendChild(blist);
+      }
+    }
     // 追加欄
     const add=document.createElement("div");add.className="todo-add";
     const inp=document.createElement("input");inp.placeholder="入力してEnterで追加";
@@ -2693,11 +2727,11 @@ function lifeBuildExport(){
   lifehack.sections.forEach(sec=>{
     body+="■ "+(sec.name||"（名称未設定）")+"：\n";
     if(!sec.items.length){body+="- （未記入）\n";}
-    else{body+=sec.items.map((x,i)=>{
+    else{const act=sec.items.filter(x=>!x.bought);body+=(act.length?act.map((x,i)=>{
       const lead=sec.ranked?((i+1)+". "):"- ";
       const c=(sec.cost&&x.cost)?`（${x.cost}）`:"";
       return lead+x.t+c;
-    }).join("\n")+"\n";}
+    }).join("\n"):"- （未記入）")+"\n";}
   });
   body+="■ 前線（実行中・最大3）：\n"+fronts;
   // 今のルーチン（Routineタブの習慣）も渡す：間引きの相談に使えるように
@@ -2938,7 +2972,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.7";
+const APP_VERSION="OS v5.8";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

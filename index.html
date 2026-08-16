@@ -217,6 +217,7 @@
   .rem-item{display:flex;align-items:center;gap:9px;padding:6px 2px;font-size:14px;line-height:1.5;color:var(--ink)}
   .rem-item .bullet{color:var(--accent);flex:none}
   .rem-item .rtx{flex:1;cursor:pointer}
+  .rem-item .lifenum{flex:none;width:20px;height:20px;border-radius:50%;background:var(--accent2);color:#04201b;font-size:11px;font-weight:700;display:grid;place-items:center}
   .rem-item .rmv{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .rm{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
   .rem-empty{color:var(--ink-faint);font-size:13px;padding:8px 2px}
@@ -243,6 +244,7 @@
   <button class="tab" id="tabNotes">Notes</button>
   <button class="tab" id="tabInvest">Investment</button>
   <button class="tab" id="tabPacking">Packing</button>
+  <button class="tab" id="tabLife">Lifehack</button>
 </div>
 
 <div id="viewCheck">
@@ -501,6 +503,35 @@
   </div>
 </div>
 
+<div id="viewLife" style="display:none">
+  <div class="tsection">
+    <div class="tsec-h">前線（実行中・最大3）</div>
+    <div id="lifeFronts"></div>
+    <div class="todo-add"><input id="lifeFrontInput" placeholder="今まさに続けている約束を入力してEnter"></div>
+    <div id="lifeFrontWarn" class="hint" style="margin-top:6px;display:none;color:var(--danger)">前線が3つを超えています。どれかを減らすのがおすすめです。</div>
+  </div>
+  <div class="tsection">
+    <div class="tsec-h">夢・なりたい状態</div>
+    <div id="lifeDreams"></div>
+    <div class="todo-add"><input id="lifeDreamInput" placeholder="方向を入力してEnter（いくつでも可）"></div>
+  </div>
+  <div class="tsection">
+    <div class="tsec-h">お金</div>
+    <div id="lifeMoney"></div>
+    <div class="todo-add"><input id="lifeMoneyInput" placeholder="買いたいもの・貯金の目標などを入力してEnter"></div>
+  </div>
+  <div class="tsection">
+    <div class="tsec-h">旅行</div>
+    <div id="lifeTravel"></div>
+    <div class="todo-add"><input id="lifeTravelInput" placeholder="行きたいところを入力してEnter"></div>
+  </div>
+  <div class="tsection">
+    <div class="tsec-h">家族でやりたいこと</div>
+    <div id="lifeFamily"></div>
+    <div class="todo-add"><input id="lifeFamilyInput" placeholder="家族でやりたいことを入力してEnter"></div>
+  </div>
+</div>
+
 <dialog id="packTmplDlg">
   <div class="dlg-h">テンプレから作る</div>
   <div class="dlg-b">
@@ -650,6 +681,7 @@
     <div class="field"><label>タブ4（メモ）</label><input id="tn_notes" placeholder="Notes"></div>
     <div class="field"><label>タブ（Investment）</label><input id="tn_invest" placeholder="Investment"></div>
     <div class="field"><label>タブ（Packing）</label><input id="tn_packing" placeholder="Packing"></div>
+    <div class="field"><label>タブ（Lifehack）</label><input id="tn_life" placeholder="Lifehack"></div>
     <p class="hint" style="margin-top:14px">タブの並び順を変更できます（▲▼で移動）。</p>
     <div id="tabOrderList"></div>
     <p class="hint" style="margin-top:14px">Todayの予定で使う「定型」を編集できます（起床・就寝・食事など）。</p>
@@ -834,6 +866,10 @@ let reminders=load(K_REMIND,[]);   // 毎日出る「心がけ」（文字列の
 let dayDefaults=load(K_DAYDEF,[]);   // 曜日別デフォルト予定 [{id,days:[1..5],label,start,end,cat}]
 const K_INV="routine_invest_v1",K_INVCHK="routine_invest_checks_v1",K_INVEV="routine_invest_events_v1",K_INVTODAY="routine_invest_today_v1";
 const K_PACK="routine_packing_v1",K_PACKTMPL="routine_packing_templates_v1";
+const K_LIFE="routine_lifehack_v1";
+let lifehack=load(K_LIFE,null);
+if(!lifehack||typeof lifehack!=="object"){lifehack={dreams:[],money:[],travel:[],family:[],fronts:[]};lset(K_LIFE,lifehack);}
+["dreams","money","travel","family","fronts"].forEach(k=>{if(!Array.isArray(lifehack[k]))lifehack[k]=[];});
 let packing=load(K_PACK,[]);   // 持ち物リスト [{id,title,date,sections:[{name,items:[{id,label,note,checked}]}],updatedAt,archived}]
 let packTemplates=load(K_PACKTMPL,[]);   // テンプレ [{id,title,sections:[...]}]
 let invItems=load(K_INV,[]);   // ルーチンでやること [{id,label,freq,days,date,memo}]
@@ -958,6 +994,7 @@ async function pull(){
       if(Array.isArray(s.inv)){invItems=s.inv;lset(K_INV,invItems);}
       if(Array.isArray(s.packing)){packing=s.packing;lset(K_PACK,packing);}
       if(Array.isArray(s.packtmpl)){packTemplates=s.packtmpl;lset(K_PACKTMPL,packTemplates);}
+      if(s.lifehack&&typeof s.lifehack==="object"){lifehack=s.lifehack;["dreams","money","travel","family","fronts"].forEach(k=>{if(!Array.isArray(lifehack[k]))lifehack[k]=[];});lset(K_LIFE,lifehack);}
       if(s.invchk){invChecks=s.invchk;lset(K_INVCHK,invChecks);}
       if(s.invev){invEvents=s.invev;lset(K_INVEV,invEvents);}
       if(s.invtoday){invToday=s.invtoday;lset(K_INVTODAY,invToday);}
@@ -977,6 +1014,7 @@ async function pull(){
       if(document.getElementById("viewToday").style.display!=="none")tRender();
       if(document.getElementById("viewInvest").style.display!=="none")invRender();
       if(document.getElementById("viewPacking").style.display!=="none"){if(packCurId)packRenderDetail();else packRender();}
+      if(document.getElementById("viewLife").style.display!=="none")lifeRender();
     }else{setSync("err","応答エラー");}
   }catch(e){setSync("err","オフライン（ローカルに保存中）");}
 }
@@ -993,7 +1031,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,packing:packing,packtmpl:packTemplates,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
+      body:JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,packing:packing,packtmpl:packTemplates,lifehack:lifehack,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}})});
     pendingPush=false;
     setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){setSync("err","保存失敗（後で再送）");}
@@ -1246,7 +1284,7 @@ document.getElementById("g_add").onclick=()=>{
 const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElementById("viewCal");
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
-  const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday"),vi=document.getElementById("viewInvest"),vp=document.getElementById("viewPacking");
+  const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday"),vi=document.getElementById("viewInvest"),vp=document.getElementById("viewPacking"),vl=document.getElementById("viewLife");
   viewCheck.style.display=which==="check"?"block":"none";
   vw.style.display=which==="workout"?"block":"none";
   viewCal.style.display=which==="cal"?"block":"none";
@@ -1254,6 +1292,7 @@ function showTab(which){
   vt.style.display=which==="today"?"block":"none";
   vi.style.display=which==="invest"?"block":"none";
   vp.style.display=which==="packing"?"block":"none";
+  vl.style.display=which==="life"?"block":"none";
   tabCheck.classList.toggle("on",which==="check");
   document.getElementById("tabToday").classList.toggle("on",which==="today");
   document.getElementById("tabWorkout").classList.toggle("on",which==="workout");
@@ -1261,6 +1300,7 @@ function showTab(which){
   document.getElementById("tabNotes").classList.toggle("on",which==="notes");
   document.getElementById("tabInvest").classList.toggle("on",which==="invest");
   document.getElementById("tabPacking").classList.toggle("on",which==="packing");
+  document.getElementById("tabLife").classList.toggle("on",which==="life");
   if(which==="check")render();
   if(which==="cal")renderCal();
   if(which==="workout"){wCur=new Date(cur);wRender();}
@@ -1268,6 +1308,7 @@ function showTab(which){
   if(which==="today"){tCur=new Date(cur);tRender();}
   if(which==="invest"){invCur=new Date(cur);invRender();}
   if(which==="packing")packShowList();
+  if(which==="life")lifeRender();
   // 選択タブが画面外なら、見える位置までスクロール
   const activeBtn=document.getElementById(TAB_BTN_ID[which]);
   if(activeBtn&&activeBtn.scrollIntoView)activeBtn.scrollIntoView({inline:"nearest",block:"nearest"});
@@ -1278,6 +1319,7 @@ document.getElementById("tabWorkout").onclick=()=>showTab("workout");
 document.getElementById("tabNotes").onclick=()=>showTab("notes");
 document.getElementById("tabInvest").onclick=()=>showTab("invest");
 document.getElementById("tabPacking").onclick=()=>showTab("packing");
+document.getElementById("tabLife").onclick=()=>showTab("life");
 document.getElementById("tabToday").onclick=()=>showTab("today");
 
 function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -2449,6 +2491,42 @@ document.getElementById("packImportSave").onclick=()=>{
   lset(K_PACK,packing);packImportDlg.close();packRender();pushSoon();
 };
 
+/* ---------- Lifehack tab ---------- */
+function lifeRenderList(key,boxId,isFront){
+  const box=document.getElementById(boxId);box.innerHTML="";
+  const arr=lifehack[key]||[];
+  if(!arr.length){box.innerHTML='<div class="rem-empty">下の欄に入力してEnterで追加できます。</div>';}
+  arr.forEach((t,i)=>{
+    const row=document.createElement("div");row.className="rem-item";
+    const label=isFront?`<span class="lifenum">${i+1}</span>`:'<span class="bullet">・</span>';
+    row.innerHTML=`${label}<span class="rtx">${esc(t)}</span><button class="rm">×</button>`;
+    row.querySelector(".rtx").onclick=()=>{
+      const nv=prompt("編集",t);if(nv===null)return;const v=nv.trim();
+      if(!v){arr.splice(i,1);}else{arr[i]=v;}
+      lset(K_LIFE,lifehack);lifeRender();pushSoon();
+    };
+    row.querySelector(".rm").onclick=()=>{arr.splice(i,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+    box.appendChild(row);
+  });
+}
+function lifeRender(){
+  lifeRenderList("fronts","lifeFronts",true);
+  lifeRenderList("dreams","lifeDreams",false);
+  lifeRenderList("money","lifeMoney",false);
+  lifeRenderList("travel","lifeTravel",false);
+  lifeRenderList("family","lifeFamily",false);
+  document.getElementById("lifeFrontWarn").style.display=(lifehack.fronts.length>3)?"block":"none";
+}
+function lifeAdd(key,inputId){
+  const el=document.getElementById(inputId);
+  el.onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;lifehack[key].push(v);e.target.value="";lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+}
+lifeAdd("fronts","lifeFrontInput");
+lifeAdd("dreams","lifeDreamInput");
+lifeAdd("money","lifeMoneyInput");
+lifeAdd("travel","lifeTravelInput");
+lifeAdd("family","lifeFamilyInput");
+
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");
 document.getElementById("openSync").onclick=()=>{settingsDlg.close();document.getElementById("f_url").value=gasUrl||"";document.getElementById("cfgStatus").textContent="";cfgDlg.showModal();};
@@ -2476,7 +2554,7 @@ applyTheme(theme);
 function setTheme(t){theme=t;lset("routine_theme_v1",theme);applyTheme(theme);paintThemePick();}
 document.getElementById("themeToggle").onclick=()=>setTheme(theme==="light"?"dark":"light");
 
-const TAB_DEFAULTS={check:"Routine",today:"Today",workout:"Training",cal:"Calendar",notes:"Notes",invest:"Investment",packing:"Packing"};
+const TAB_DEFAULTS={check:"Routine",today:"Today",workout:"Training",cal:"Calendar",notes:"Notes",invest:"Investment",packing:"Packing",life:"Lifehack"};
 let tabNames=load("routine_tabnames_v1",{});
 function applyTabNames(){
   document.getElementById("tabCheck").textContent=tabNames.check||TAB_DEFAULTS.check;
@@ -2486,11 +2564,12 @@ function applyTabNames(){
   document.getElementById("tabNotes").textContent=tabNames.notes||TAB_DEFAULTS.notes;
   document.getElementById("tabInvest").textContent=tabNames.invest||TAB_DEFAULTS.invest;
   document.getElementById("tabPacking").textContent=tabNames.packing||TAB_DEFAULTS.packing;
+  document.getElementById("tabLife").textContent=tabNames.life||TAB_DEFAULTS.life;
 }
 applyTabNames();
 
-const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes","invest","packing"];
-const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest",packing:"tabPacking"};
+const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes","invest","packing","life"];
+const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest",packing:"tabPacking",life:"tabLife"};
 let tabOrder=load("routine_taborder_v1",null);
 if(!Array.isArray(tabOrder)||!tabOrder.length){tabOrder=TAB_ORDER_DEFAULT.slice();}
 // 新しいタブが増えたら、既存の並び順の末尾に足す（既存の並びは尊重）
@@ -2526,6 +2605,7 @@ document.getElementById("settingsBtn").onclick=()=>{
   document.getElementById("tn_notes").value=tabNames.notes||"";
   document.getElementById("tn_invest").value=tabNames.invest||"";
   document.getElementById("tn_packing").value=tabNames.packing||"";
+  document.getElementById("tn_life").value=tabNames.life||"";
   buildPresetList();
   buildTabOrder();
   buildCatList();
@@ -2652,13 +2732,14 @@ document.getElementById("settingsSave").onclick=()=>{
     notes:document.getElementById("tn_notes").value.trim(),
     invest:document.getElementById("tn_invest").value.trim(),
     packing:document.getElementById("tn_packing").value.trim(),
+    life:document.getElementById("tn_life").value.trim(),
   };
   Object.keys(tabNames).forEach(k=>{if(!tabNames[k])delete tabNames[k];});
   lset("routine_tabnames_v1",tabNames);applyTabNames();settingsDlg.close();
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.1";
+const APP_VERSION="OS v5.2";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

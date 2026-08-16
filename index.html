@@ -518,11 +518,29 @@
   <div id="lifeSections"></div>
   <div class="plan-tools" style="margin-top:4px">
     <button class="btn-ghost" id="lifeAddSection">＋ 大項目を追加</button>
+    <button class="btn-ghost" id="lifeImport">AIから取り込む</button>
   </div>
   <div class="plan-tools" style="margin-top:4px">
     <button class="btn-primary" id="lifeExport">AIに渡す文を書き出す</button>
   </div>
 </div>
+
+<dialog id="lifeImportDlg">
+  <div class="dlg-h">AIから取り込む</div>
+  <div class="dlg-b">
+    <p class="hint">AIが整理したMarkdownを貼り付けてください。<br>形式：<code>## 大項目名</code> の下に <code>- 項目</code>。前線は <code>## 前線</code> という見出しにします。当てはまらない行は無視されます。</p>
+    <textarea id="lifeImportText" rows="9" placeholder="## 前線&#10;- 23時就床&#10;- 断酒&#10;## お金&#10;- 新しいカメラのために月2万貯める&#10;## 旅行&#10;- 金沢 1泊2日"
+      style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:13px;font-family:var(--mono);resize:vertical"></textarea>
+    <div class="field" style="margin-top:10px"><label>取り込み方</label>
+      <select id="lifeImportMode" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:9px 11px;border-radius:8px;font-size:13px">
+        <option value="merge">今の内容に追加する</option>
+        <option value="replace">丸ごと置き換える</option>
+      </select>
+    </div>
+    <div id="lifeImportPreview" style="margin-top:12px"></div>
+  </div>
+  <div class="dlg-f"><button class="btn-ghost" onclick="lifeImportDlg.close()">キャンセル</button><button class="btn-ghost" id="lifeImportPreviewBtn">プレビュー</button><button class="btn-primary" id="lifeImportSave" style="display:none">取り込む</button></div>
+</dialog>
 
 <dialog id="lifeExportDlg">
   <div class="dlg-h">AIに渡す文</div>
@@ -2571,6 +2589,76 @@ function lifeRender(){
 document.getElementById("lifeFrontInput").onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;lifehack.fronts.push(v);e.target.value="";lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
 // 大項目の追加
 document.getElementById("lifeAddSection").onclick=()=>{const nv=prompt("大項目の名称（例：お金、旅行、健康）","");if(nv===null)return;const v=nv.trim();if(!v)return;lifehack.sections.push({id:"ls"+Date.now().toString(36),name:v,items:[]});lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+/* AIから取り込む（純粋関数） */
+function lifeParseImport(text){
+  const lines=(text||"").split(/\r?\n/);
+  const res={fronts:[],sections:[]};
+  let cur=null;
+  const isFront=n=>/^(前線|フロント)/.test(n.trim());
+  for(const raw of lines){
+    const line=raw.trim();if(!line)continue;
+    let m;
+    if(m=line.match(/^#{1,3}\s+(.+)$/)){
+      const name=m[1].trim();
+      if(isFront(name)){cur={front:true};}
+      else{cur={name,items:[]};res.sections.push(cur);}
+      continue;
+    }
+    if(m=line.match(/^[-*・]\s*(?:\[[ xX✓]\]\s*)?(.+)$/)){
+      let body=m[1].trim();
+      body=body.replace(/\s*::\s*.+$/,"").replace(/^\d+\.\s*/,"").trim();
+      if(!body)continue;
+      if(cur&&cur.front){res.fronts.push(body);}
+      else{if(!cur){cur={name:"",items:[]};res.sections.push(cur);}cur.items.push(body);}
+      continue;
+    }
+  }
+  res.sections=res.sections.filter(s=>s.items.length>0);
+  return res;
+}
+const lifeImportDlg=document.getElementById("lifeImportDlg");
+document.getElementById("lifeImport").onclick=()=>{
+  document.getElementById("lifeImportText").value="";
+  document.getElementById("lifeImportPreview").innerHTML="";
+  document.getElementById("lifeImportSave").style.display="none";
+  document.getElementById("lifeImportMode").value="merge";
+  lifeImportParsed=null;lifeImportDlg.showModal();
+};
+let lifeImportParsed=null;
+document.getElementById("lifeImportPreviewBtn").onclick=()=>{
+  const parsed=lifeParseImport(document.getElementById("lifeImportText").value);
+  const total=parsed.fronts.length+parsed.sections.reduce((a,s)=>a+s.items.length,0);
+  const box=document.getElementById("lifeImportPreview");
+  if(!total){box.innerHTML='<div class="dayev-none">項目が見つかりませんでした。形式を確認してください。</div>';document.getElementById("lifeImportSave").style.display="none";lifeImportParsed=null;return;}
+  lifeImportParsed=parsed;
+  let html='<div style="border:1px solid var(--line);border-radius:9px;padding:11px 12px;background:var(--panel)">';
+  if(parsed.fronts.length){html+='<div style="font-size:12px;color:var(--accent2);font-weight:700;margin-bottom:3px">前線</div>';parsed.fronts.forEach(f=>{html+=`<div style="font-size:13px;padding:1px 0">・${esc(f)}</div>`;});}
+  parsed.sections.forEach(s=>{
+    html+=`<div style="font-size:12px;color:var(--ink-dim);font-weight:700;margin:8px 0 3px">${esc(s.name||"（名称なし）")}（${s.items.length}）</div>`;
+    s.items.forEach(it=>{html+=`<div style="font-size:13px;padding:1px 0">・${esc(it)}</div>`;});
+  });
+  html+=`<div class="hint" style="margin-top:8px">前線 ${parsed.fronts.length}・大項目 ${parsed.sections.length}・合計 ${total} 項目</div></div>`;
+  box.innerHTML=html;
+  document.getElementById("lifeImportSave").style.display="inline-block";
+};
+document.getElementById("lifeImportSave").onclick=()=>{
+  if(!lifeImportParsed)return;
+  const mode=document.getElementById("lifeImportMode").value;
+  if(mode==="replace"){
+    if(!confirm("今のLifehackの内容を、取り込む内容で丸ごと置き換えます。よろしいですか？"))return;
+    lifehack.fronts=lifeImportParsed.fronts.slice();
+    lifehack.sections=lifeImportParsed.sections.map(s=>({id:"ls"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:s.name,items:s.items.slice()}));
+  }else{
+    // 追加：前線はそのまま足す。大項目は同名があればそこに足し、同一項目は重複させない
+    lifeImportParsed.fronts.forEach(f=>{if(!lifehack.fronts.includes(f))lifehack.fronts.push(f);});
+    lifeImportParsed.sections.forEach(s=>{
+      let tgt=lifehack.sections.find(x=>(x.name||"")===(s.name||""));
+      if(!tgt){tgt={id:"ls"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:s.name,items:[]};lifehack.sections.push(tgt);}
+      s.items.forEach(it=>{if(!tgt.items.includes(it))tgt.items.push(it);});
+    });
+  }
+  lset(K_LIFE,lifehack);lifeImportDlg.close();lifeRender();pushSoon();
+};
 /* AIに渡す文（状態メモ形式）を書き出す */
 function lifeBuildExport(){
   const d=new Date();
@@ -2820,7 +2908,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.5";
+const APP_VERSION="OS v5.6";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

@@ -218,6 +218,8 @@
   .rem-item .bullet{color:var(--accent);flex:none}
   .rem-item .rtx{flex:1;cursor:pointer}
   .rem-item .lifenum{flex:none;width:20px;height:20px;border-radius:50%;background:var(--accent2);color:#04201b;font-size:11px;font-weight:700;display:grid;place-items:center}
+  .tsec-h .life-secedit{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 8px;flex:none;font-weight:400;letter-spacing:0;text-transform:none}
+  .tsec-h .life-secdel{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
   .rem-item .rmv{background:none;border:1px solid var(--line);color:var(--ink-dim);cursor:pointer;font-size:11px;border-radius:5px;padding:2px 6px;flex:none}
   .rem-item .rm{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;flex:none}
   .rem-empty{color:var(--ink-faint);font-size:13px;padding:8px 2px}
@@ -510,25 +512,9 @@
     <div class="todo-add"><input id="lifeFrontInput" placeholder="今まさに続けている約束を入力してEnter"></div>
     <div id="lifeFrontWarn" class="hint" style="margin-top:6px;display:none;color:var(--danger)">前線が3つを超えています。どれかを減らすのがおすすめです。</div>
   </div>
-  <div class="tsection">
-    <div class="tsec-h">夢・なりたい状態</div>
-    <div id="lifeDreams"></div>
-    <div class="todo-add"><input id="lifeDreamInput" placeholder="方向を入力してEnter（いくつでも可）"></div>
-  </div>
-  <div class="tsection">
-    <div class="tsec-h">お金</div>
-    <div id="lifeMoney"></div>
-    <div class="todo-add"><input id="lifeMoneyInput" placeholder="買いたいもの・貯金の目標などを入力してEnter"></div>
-  </div>
-  <div class="tsection">
-    <div class="tsec-h">旅行</div>
-    <div id="lifeTravel"></div>
-    <div class="todo-add"><input id="lifeTravelInput" placeholder="行きたいところを入力してEnter"></div>
-  </div>
-  <div class="tsection">
-    <div class="tsec-h">家族でやりたいこと</div>
-    <div id="lifeFamily"></div>
-    <div class="todo-add"><input id="lifeFamilyInput" placeholder="家族でやりたいことを入力してEnter"></div>
+  <div id="lifeSections"></div>
+  <div class="plan-tools" style="margin-top:4px">
+    <button class="btn-ghost" id="lifeAddSection">＋ 大項目を追加</button>
   </div>
   <div class="plan-tools" style="margin-top:4px">
     <button class="btn-primary" id="lifeExport">AIに渡す文を書き出す</button>
@@ -882,8 +868,20 @@ const K_INV="routine_invest_v1",K_INVCHK="routine_invest_checks_v1",K_INVEV="rou
 const K_PACK="routine_packing_v1",K_PACKTMPL="routine_packing_templates_v1";
 const K_LIFE="routine_lifehack_v1";
 let lifehack=load(K_LIFE,null);
-if(!lifehack||typeof lifehack!=="object"){lifehack={dreams:[],money:[],travel:[],family:[],fronts:[]};lset(K_LIFE,lifehack);}
-["dreams","money","travel","family","fronts"].forEach(k=>{if(!Array.isArray(lifehack[k]))lifehack[k]=[];});
+if(!lifehack||typeof lifehack!=="object"){lifehack={fronts:[],sections:[]};}
+if(!Array.isArray(lifehack.fronts))lifehack.fronts=[];
+// 旧形式（dreams/money/travel/family の固定キー）から sections へ移行
+if(!Array.isArray(lifehack.sections)){
+  lifehack.sections=[
+    {id:"ls_dreams",name:"夢・なりたい状態",items:Array.isArray(lifehack.dreams)?lifehack.dreams:[]},
+    {id:"ls_money",name:"お金",items:Array.isArray(lifehack.money)?lifehack.money:[]},
+    {id:"ls_travel",name:"旅行",items:Array.isArray(lifehack.travel)?lifehack.travel:[]},
+    {id:"ls_family",name:"家族でやりたいこと",items:Array.isArray(lifehack.family)?lifehack.family:[]},
+  ];
+  delete lifehack.dreams;delete lifehack.money;delete lifehack.travel;delete lifehack.family;
+}
+lifehack.sections.forEach(s=>{if(!Array.isArray(s.items))s.items=[];if(!s.id)s.id="ls"+Math.random().toString(36).slice(2,7);});
+lset(K_LIFE,lifehack);
 let packing=load(K_PACK,[]);   // 持ち物リスト [{id,title,date,sections:[{name,items:[{id,label,note,checked}]}],updatedAt,archived}]
 let packTemplates=load(K_PACKTMPL,[]);   // テンプレ [{id,title,sections:[...]}]
 let invItems=load(K_INV,[]);   // ルーチンでやること [{id,label,freq,days,date,memo}]
@@ -1008,7 +1006,7 @@ async function pull(){
       if(Array.isArray(s.inv)){invItems=s.inv;lset(K_INV,invItems);}
       if(Array.isArray(s.packing)){packing=s.packing;lset(K_PACK,packing);}
       if(Array.isArray(s.packtmpl)){packTemplates=s.packtmpl;lset(K_PACKTMPL,packTemplates);}
-      if(s.lifehack&&typeof s.lifehack==="object"){lifehack=s.lifehack;["dreams","money","travel","family","fronts"].forEach(k=>{if(!Array.isArray(lifehack[k]))lifehack[k]=[];});lset(K_LIFE,lifehack);}
+      if(s.lifehack&&typeof s.lifehack==="object"){lifehack=s.lifehack;if(!Array.isArray(lifehack.fronts))lifehack.fronts=[];if(!Array.isArray(lifehack.sections))lifehack.sections=[];lifehack.sections.forEach(x=>{if(!Array.isArray(x.items))x.items=[];if(!x.id)x.id="ls"+Math.random().toString(36).slice(2,7);});lset(K_LIFE,lifehack);}
       if(s.invchk){invChecks=s.invchk;lset(K_INVCHK,invChecks);}
       if(s.invev){invEvents=s.invev;lset(K_INVEV,invEvents);}
       if(s.invtoday){invToday=s.invtoday;lset(K_INVTODAY,invToday);}
@@ -2506,60 +2504,70 @@ document.getElementById("packImportSave").onclick=()=>{
 };
 
 /* ---------- Lifehack tab ---------- */
-function lifeRenderList(key,boxId,isFront){
-  const box=document.getElementById(boxId);box.innerHTML="";
-  const arr=lifehack[key]||[];
+function lifeFrontRender(){
+  const box=document.getElementById("lifeFronts");box.innerHTML="";
+  const arr=lifehack.fronts;
   if(!arr.length){box.innerHTML='<div class="rem-empty">下の欄に入力してEnterで追加できます。</div>';}
   arr.forEach((t,i)=>{
     const row=document.createElement("div");row.className="rem-item";
-    const label=isFront?`<span class="lifenum">${i+1}</span>`:'<span class="bullet">・</span>';
-    row.innerHTML=`${label}<span class="rtx">${esc(t)}</span><button class="rm">×</button>`;
-    row.querySelector(".rtx").onclick=()=>{
-      const nv=prompt("編集",t);if(nv===null)return;const v=nv.trim();
-      if(!v){arr.splice(i,1);}else{arr[i]=v;}
-      lset(K_LIFE,lifehack);lifeRender();pushSoon();
-    };
+    row.innerHTML=`<span class="lifenum">${i+1}</span><span class="rtx">${esc(t)}</span><button class="rm">×</button>`;
+    row.querySelector(".rtx").onclick=()=>{const nv=prompt("編集",t);if(nv===null)return;const v=nv.trim();if(!v){arr.splice(i,1);}else{arr[i]=v;}lset(K_LIFE,lifehack);lifeRender();pushSoon();};
     row.querySelector(".rm").onclick=()=>{arr.splice(i,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
     box.appendChild(row);
   });
 }
 function lifeRender(){
-  lifeRenderList("fronts","lifeFronts",true);
-  lifeRenderList("dreams","lifeDreams",false);
-  lifeRenderList("money","lifeMoney",false);
-  lifeRenderList("travel","lifeTravel",false);
-  lifeRenderList("family","lifeFamily",false);
+  lifeFrontRender();
   document.getElementById("lifeFrontWarn").style.display=(lifehack.fronts.length>3)?"block":"none";
+  const wrap=document.getElementById("lifeSections");wrap.innerHTML="";
+  lifehack.sections.forEach((sec,si)=>{
+    const box=document.createElement("div");box.className="tsection";
+    // 見出し（編集可能）
+    const h=document.createElement("div");h.className="tsec-h";h.style.display="flex";h.style.alignItems="center";h.style.gap="8px";
+    h.innerHTML=`<span class="rtx" style="flex:1;cursor:pointer">${esc(sec.name||"（名称未設定）")}</span><button class="rmv life-secedit">名称</button><button class="rm life-secdel">×</button>`;
+    h.querySelector(".rtx").onclick=h.querySelector(".life-secedit").onclick=()=>{const nv=prompt("大項目の名称",sec.name||"");if(nv===null)return;const v=nv.trim();if(v){sec.name=v;lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+    h.querySelector(".life-secdel").onclick=()=>{if(confirm(`「${sec.name}」を中身ごと削除しますか？`)){lifehack.sections.splice(si,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+    box.appendChild(h);
+    // 中身
+    const list=document.createElement("div");
+    if(!sec.items.length){list.innerHTML='<div class="rem-empty">下の欄に入力してEnterで追加できます。</div>';}
+    sec.items.forEach((t,ii)=>{
+      const row=document.createElement("div");row.className="rem-item";
+      row.innerHTML=`<span class="bullet">・</span><span class="rtx">${esc(t)}</span><button class="rm">×</button>`;
+      row.querySelector(".rtx").onclick=()=>{const nv=prompt("編集",t);if(nv===null)return;const v=nv.trim();if(!v){sec.items.splice(ii,1);}else{sec.items[ii]=v;}lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+      row.querySelector(".rm").onclick=()=>{sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+    // 追加欄
+    const add=document.createElement("div");add.className="todo-add";
+    const inp=document.createElement("input");inp.placeholder="入力してEnterで追加";
+    inp.onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;sec.items.push(v);e.target.value="";lset(K_LIFE,lifehack);lifeRender();pushSoon();
+      // 追加後、同じ欄にフォーカスを戻す
+      setTimeout(()=>{const again=document.querySelectorAll("#lifeSections .todo-add input")[si];if(again)again.focus();},0);}};
+    add.appendChild(inp);box.appendChild(add);
+    wrap.appendChild(box);
+  });
 }
-function lifeAdd(key,inputId){
-  const el=document.getElementById(inputId);
-  el.onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;lifehack[key].push(v);e.target.value="";lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
-}
-lifeAdd("fronts","lifeFrontInput");
-lifeAdd("dreams","lifeDreamInput");
-lifeAdd("money","lifeMoneyInput");
-lifeAdd("travel","lifeTravelInput");
-lifeAdd("family","lifeFamilyInput");
+// 前線の追加
+document.getElementById("lifeFrontInput").onkeydown=e=>{if(e.key==="Enter"){const v=e.target.value.trim();if(!v)return;lifehack.fronts.push(v);e.target.value="";lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
+// 大項目の追加
+document.getElementById("lifeAddSection").onclick=()=>{const nv=prompt("大項目の名称（例：お金、旅行、健康）","");if(nv===null)return;const v=nv.trim();if(!v)return;lifehack.sections.push({id:"ls"+Date.now().toString(36),name:v,items:[]});lset(K_LIFE,lifehack);lifeRender();pushSoon();};
 /* AIに渡す文（状態メモ形式）を書き出す */
 function lifeBuildExport(){
   const d=new Date();
   const ymd=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日";
-  const bullet=arr=>arr.length?arr.map(x=>"- "+x).join("\n"):"- （未記入）";
   const fronts=lifehack.fronts.length?lifehack.fronts.map((x,i)=>(i+1)+". "+x).join("\n"):"（未記入）";
-  // やりたいこと（単発）は Today/ルーチンではなく、参考として今日のやりたいことを拾う
+  let body="【状態】最終更新："+ymd+"\n";
+  lifehack.sections.forEach(sec=>{
+    body+="■ "+(sec.name||"（名称未設定）")+"：\n";
+    body+=(sec.items.length?sec.items.map(x=>"- "+x).join("\n"):"- （未記入）")+"\n";
+  });
+  body+="■ 前線（実行中・最大3）：\n"+fronts;
   let wants="";
   try{const td=(today[iso(new Date())]||{}).todo||[];wants=td.filter(t=>t.text).map(t=>"- "+t.text).join("\n");}catch(e){}
-  return `【状態】最終更新：${ymd}
-■ 方向・夢：
-${bullet(lifehack.dreams)}
-■ 方向・お金：
-${bullet(lifehack.money)}
-■ 方向・旅行：
-${bullet(lifehack.travel)}
-■ 方向・家族：
-${bullet(lifehack.family)}
-■ 前線（実行中・最大3）：
-${fronts}${wants?`\n■ 今日のやりたいこと：\n${wants}`:""}`;
+  if(wants)body+="\n■ 今日のやりたいこと：\n"+wants;
+  return body;
 }
 document.getElementById("lifeExport").onclick=()=>{
   document.getElementById("lifeExportText").value=lifeBuildExport();
@@ -2784,7 +2792,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.3";
+const APP_VERSION="OS v5.4";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

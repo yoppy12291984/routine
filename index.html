@@ -530,7 +530,21 @@
     <div id="lifeFamily"></div>
     <div class="todo-add"><input id="lifeFamilyInput" placeholder="家族でやりたいことを入力してEnter"></div>
   </div>
+  <div class="plan-tools" style="margin-top:4px">
+    <button class="btn-primary" id="lifeExport">AIに渡す文を書き出す</button>
+  </div>
 </div>
+
+<dialog id="lifeExportDlg">
+  <div class="dlg-h">AIに渡す文</div>
+  <div class="dlg-b">
+    <p class="hint">下の文をコピーして、Lifehack OS のチャットに貼ると、今の状態を踏まえて相談できます。</p>
+    <button class="btn-ghost" id="lifeCopy" style="width:100%;margin-bottom:10px">コピー</button>
+    <textarea id="lifeExportText" rows="14" readonly
+      style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:12px;font-family:var(--mono);resize:vertical;line-height:1.5"></textarea>
+  </div>
+  <div class="dlg-f"><button class="btn-primary" onclick="lifeExportDlg.close()">閉じる</button></div>
+</dialog>
 
 <dialog id="packTmplDlg">
   <div class="dlg-h">テンプレから作る</div>
@@ -2526,6 +2540,37 @@ lifeAdd("dreams","lifeDreamInput");
 lifeAdd("money","lifeMoneyInput");
 lifeAdd("travel","lifeTravelInput");
 lifeAdd("family","lifeFamilyInput");
+/* AIに渡す文（状態メモ形式）を書き出す */
+function lifeBuildExport(){
+  const d=new Date();
+  const ymd=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日";
+  const bullet=arr=>arr.length?arr.map(x=>"- "+x).join("\n"):"- （未記入）";
+  const fronts=lifehack.fronts.length?lifehack.fronts.map((x,i)=>(i+1)+". "+x).join("\n"):"（未記入）";
+  // やりたいこと（単発）は Today/ルーチンではなく、参考として今日のやりたいことを拾う
+  let wants="";
+  try{const td=(today[iso(new Date())]||{}).todo||[];wants=td.filter(t=>t.text).map(t=>"- "+t.text).join("\n");}catch(e){}
+  return `【状態】最終更新：${ymd}
+■ 方向・夢：
+${bullet(lifehack.dreams)}
+■ 方向・お金：
+${bullet(lifehack.money)}
+■ 方向・旅行：
+${bullet(lifehack.travel)}
+■ 方向・家族：
+${bullet(lifehack.family)}
+■ 前線（実行中・最大3）：
+${fronts}${wants?`\n■ 今日のやりたいこと：\n${wants}`:""}`;
+}
+document.getElementById("lifeExport").onclick=()=>{
+  document.getElementById("lifeExportText").value=lifeBuildExport();
+  lifeExportDlg.showModal();
+};
+const lifeExportDlg=document.getElementById("lifeExportDlg");
+document.getElementById("lifeCopy").onclick=async()=>{
+  const t=document.getElementById("lifeExportText").value;
+  try{await navigator.clipboard.writeText(t);document.getElementById("lifeCopy").textContent="コピーしました！";setTimeout(()=>document.getElementById("lifeCopy").textContent="コピー",1500);}
+  catch(e){const ta=document.getElementById("lifeExportText");ta.focus();ta.select();document.getElementById("lifeCopy").textContent="上を選択してコピー";}
+};
 
 /* ---------- config ---------- */
 const cfgDlg=document.getElementById("cfgDlg");
@@ -2739,7 +2784,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.2";
+const APP_VERSION="OS v5.3";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

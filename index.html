@@ -226,6 +226,7 @@
   .life-tg.on{background:var(--accent2);border-color:var(--accent2);color:#04201b}
   .life-cost{font-size:11px;color:var(--accent);border:1px solid var(--line);border-radius:5px;padding:1px 7px;cursor:pointer;flex:none;white-space:nowrap}
   .rem-item .life-buy{background:none;border:1px solid var(--accent);color:var(--accent);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 6px;flex:none}
+  .rem-item .life-done{background:none;border:1px solid var(--done);color:var(--done);cursor:pointer;font-size:10px;border-radius:5px;padding:2px 6px;flex:none}
   .life-bought-h{font-size:12px;color:var(--ink-faint);cursor:pointer;padding:8px 2px 4px;user-select:none}
   .life-bought-item{opacity:.6}
   .life-bought-item .rtx{text-decoration:line-through}
@@ -2579,11 +2580,11 @@ function lifeRender(){
       const row=document.createElement("div");row.className="rem-item";
       const lead=sec.ranked?`<span class="lifenum">${pos+1}</span>`:'<span class="bullet">・</span>';
       const costTag=sec.cost?`<span class="life-cost">${it.cost?esc(it.cost):"費用"}</span>`:"";
-      const buyBtn=sec.cost?`<button class="rmv life-buy" title="買った">買った</button>`:`<button class="rmv life-tofront" title="前線にする">前線へ</button>`;
+      const doneBtn=sec.cost?`<button class="rmv life-buy" title="買った">買った</button>`:`<button class="rmv life-tofront" title="前線にする">前線へ</button><button class="rmv life-done" title="達成した">達成</button>`;
       row.innerHTML=`${lead}<span class="rtx">${esc(it.t)}</span>${costTag}`+
         `<button class="life-mv" data-a="iup"${pos===0?" disabled":""}>▲</button>`+
         `<button class="life-mv" data-a="idown"${pos===activeItems.length-1?" disabled":""}>▼</button>`+
-        buyBtn+`<button class="rm">×</button>`;
+        doneBtn+`<button class="rm">×</button>`;
       row.querySelector(".rtx").onclick=()=>{const nv=prompt("編集",it.t);if(nv===null)return;const v=nv.trim();if(!v){sec.items.splice(ii,1);}else{it.t=v;}lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       if(sec.cost){const ce=row.querySelector(".life-cost");if(ce)ce.onclick=()=>{const nv=prompt("費用（例：¥30,000、5万円くらい）",it.cost||"");if(nv===null)return;it.cost=nv.trim();lset(K_LIFE,lifehack);lifeRender();pushSoon();};}
       // 並び替えは「未購入の中での前後」と入れ替える
@@ -2592,6 +2593,8 @@ function lifeRender(){
       if(down)down.onclick=()=>{if(pos<activeItems.length-1){const a=activeItems[pos+1].idx,b=ii;[sec.items[a],sec.items[b]]=[sec.items[b],sec.items[a]];lset(K_LIFE,lifehack);lifeRender();pushSoon();}};
       const bb=row.querySelector(".life-buy");
       if(bb)bb.onclick=()=>{it.bought=true;it.boughtAt=iso(new Date());lset(K_LIFE,lifehack);lifeRender();pushSoon();};
+      const db=row.querySelector(".life-done");
+      if(db)db.onclick=()=>{it.bought=true;it.boughtAt=iso(new Date());lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       const tf=row.querySelector(".life-tofront");
       if(tf)tf.onclick=()=>{if(lifehack.fronts.length>=3&&!confirm("前線は3つが目安です。それでも前線に追加しますか？"))return;lifehack.fronts.push(it.t);sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       row.querySelector(".rm").onclick=()=>{sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
@@ -2601,8 +2604,9 @@ function lifeRender(){
     // 購入済み（折りたたみ）
     if(boughtItems.length){
       const open=lifeBoughtOpen.has(sec.id);
+      const doneLabel=sec.cost?"購入済み":"達成済み";
       const bh=document.createElement("div");bh.className="life-bought-h";
-      bh.innerHTML=`<span>${open?"▾":"▸"} 購入済み（${boughtItems.length}）</span>`;
+      bh.innerHTML=`<span>${open?"▾":"▸"} ${doneLabel}（${boughtItems.length}）</span>`;
       bh.onclick=()=>{if(open)lifeBoughtOpen.delete(sec.id);else lifeBoughtOpen.add(sec.id);lifeRender();};
       box.appendChild(bh);
       if(open){
@@ -2972,7 +2976,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.8";
+const APP_VERSION="OS v5.9";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

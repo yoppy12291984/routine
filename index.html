@@ -911,7 +911,7 @@ if(!Array.isArray(lifehack.sections)){
   ];
   delete lifehack.dreams;delete lifehack.money;delete lifehack.travel;delete lifehack.family;
 }
-lifehack.sections.forEach(s=>{if(!Array.isArray(s.items))s.items=[];if(!s.id)s.id="ls"+Math.random().toString(36).slice(2,7);if(typeof s.ranked!=="boolean")s.ranked=false;if(typeof s.cost!=="boolean")s.cost=false;s.items=s.items.map(it=>typeof it==="string"?{t:it}:(it&&typeof it==="object"?Object.assign({t:it.t||"",cost:it.cost||""},it.bought?{bought:true,boughtAt:it.boughtAt||""}:{}):{t:String(it)}));});
+lifehack.sections.forEach(s=>{if(!Array.isArray(s.items))s.items=[];if(!s.id)s.id="ls"+Math.random().toString(36).slice(2,7);if(typeof s.ranked!=="boolean")s.ranked=false;if(typeof s.cost!=="boolean")s.cost=false;s.items=s.items.map(it=>typeof it==="string"?{t:it}:(it&&typeof it==="object"?Object.assign({t:it.t||"",cost:it.cost||""},it.bought?{bought:true,boughtAt:it.boughtAt||""}:{}):{t:String(it)}));if(s.cost&&!s.items.some(it=>it.cost&&String(it.cost).trim()))s.cost=false;});
 lset(K_LIFE,lifehack);
 let packing=load(K_PACK,[]);   // 持ち物リスト [{id,title,date,sections:[{name,items:[{id,label,note,checked}]}],updatedAt,archived}]
 let packTemplates=load(K_PACKTMPL,[]);   // テンプレ [{id,title,sections:[...]}]
@@ -2580,7 +2580,7 @@ function lifeRender(){
       const row=document.createElement("div");row.className="rem-item";
       const lead=sec.ranked?`<span class="lifenum">${pos+1}</span>`:'<span class="bullet">・</span>';
       const costTag=sec.cost?`<span class="life-cost">${it.cost?esc(it.cost):"費用"}</span>`:"";
-      const doneBtn=sec.cost?`<button class="rmv life-buy" title="買った">買った</button>`:`<button class="rmv life-tofront" title="前線にする">前線へ</button><button class="rmv life-done" title="達成した">達成</button>`;
+      const doneBtn=sec.cost?`<button class="rmv life-buy" title="買った">買った</button>`:`<button class="rmv life-done" title="達成した">達成</button>`;
       row.innerHTML=`${lead}<span class="rtx">${esc(it.t)}</span>${costTag}`+
         `<button class="life-mv" data-a="iup"${pos===0?" disabled":""}>▲</button>`+
         `<button class="life-mv" data-a="idown"${pos===activeItems.length-1?" disabled":""}>▼</button>`+
@@ -2595,8 +2595,6 @@ function lifeRender(){
       if(bb)bb.onclick=()=>{it.bought=true;it.boughtAt=iso(new Date());lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       const db=row.querySelector(".life-done");
       if(db)db.onclick=()=>{it.bought=true;it.boughtAt=iso(new Date());lset(K_LIFE,lifehack);lifeRender();pushSoon();};
-      const tf=row.querySelector(".life-tofront");
-      if(tf)tf.onclick=()=>{if(lifehack.fronts.length>=3&&!confirm("前線は3つが目安です。それでも前線に追加しますか？"))return;lifehack.fronts.push(it.t);sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       row.querySelector(".rm").onclick=()=>{sec.items.splice(ii,1);lset(K_LIFE,lifehack);lifeRender();pushSoon();};
       list.appendChild(row);
     });
@@ -2657,12 +2655,12 @@ function lifeParseImport(text){
     const bulleted=line.match(/^[-*・]\s*(?:\[[ xX✓]\]\s*)?(.+)$/);
     if(numbered||bulleted){
       let body=(numbered?numbered[2]:bulleted[1]).trim();
-      // 費用の抽出：末尾の（¥…）(￥…)(…円) または :: 費用
+      // 費用の抽出：末尾の（¥…）（￥…）（…円）のように、通貨記号か「円」が明示された場合のみ
       let cost="";
-      let cm=body.match(/[（(]\s*([¥￥]?\s*[\d,]+\s*円?[^）)]*)\s*[）)]\s*$/);
+      let cm=body.match(/[（(]\s*((?:[¥￥]\s*[\d,]+|[\d,]+\s*円)[^）)]*)\s*[）)]\s*$/);
       if(cm){cost=cm[1].trim();body=body.replace(/[（(][^）)]*[）)]\s*$/,"").trim();}
       const dm=body.match(/\s*::\s*(.+)$/);
-      if(dm){if(!cost)cost=dm[1].trim();body=body.replace(/\s*::\s*.+$/,"").trim();}
+      if(dm){body=body.replace(/\s*::\s*.+$/,"").trim();}
       if(!body)continue;
       if(cur&&cur.front){res.fronts.push(body);}
       else{
@@ -2976,7 +2974,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v5.9";
+const APP_VERSION="OS v6.1";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

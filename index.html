@@ -1078,12 +1078,27 @@ async function push(){
   try{
     const payload=JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,packing:packing,packtmpl:packTemplates,lifehack:lifehack,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}});
     lastPushBytes=payload.length;
-    // 以前動いていた形：応答は読まず no-cors で投げるだけ（CORSブロックを避ける）
-    await fetch(gasUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:payload});
-    lastPushErr="";lastPushResp="(no-cors送信)";
-    pendingPush=false;
-    lastSavedStamp=stateStamp();
-    setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
+    const wantStamp=stateStamp();
+    // 1) no-corsで送信（応答は読めないがGASは保存する）
+    try{await fetch(gasUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:payload});}
+    catch(e2){lastPushErr="POST:"+((e2&&e2.message)||e2);}
+    // 2) 読めるGETで、サーバーに本当に保存されたか検証（書き込み反映を待って数回試す）
+    let saved=false;
+    for(let attempt=0;attempt<3&&!saved;attempt++){
+      await new Promise(r=>setTimeout(r,attempt===0?400:900));
+      try{
+        const rv=await fetch(gasUrl+(gasUrl.indexOf("?")<0?"?":"&")+"v="+Date.now(),{method:"GET"});
+        const jv=await rv.json();
+        if(jv&&jv.ok&&jv.state){
+          const s=jv.state;
+          const serverStamp=JSON.stringify(s.checks||{}).length+":"+JSON.stringify(s.today||{}).length+":"+JSON.stringify(s.lifehack||{}).length+":"+JSON.stringify(s.packing||[]).length;
+          lastPushResp="server="+serverStamp+" / want="+wantStamp;
+          if(serverStamp===wantStamp)saved=true;
+        }
+      }catch(e3){lastPushErr="VERIFY:"+((e3&&e3.message)||e3);}
+    }
+    if(saved){pendingPush=false;lastPushErr="";lastSavedStamp=wantStamp;setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));}
+    else{setSync("err","保存失敗（後で再送）");}
   }catch(e){lastPushErr=(e&&e.message)?e.message:String(e);setSync("err","保存失敗（後で再送）");}
   finally{pushing=false;}
 }
@@ -2985,7 +3000,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v6.5";
+const APP_VERSION="OS v6.6";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

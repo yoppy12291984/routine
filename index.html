@@ -1087,32 +1087,21 @@ async function push(){
     const payload=JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,packing:packing,packtmpl:packTemplates,lifehack:lifehack,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}});
     lastPushBytes=payload.length;
     const wantStamp=stateStamp();
-    // GET経由の分割保存（POSTが通らない環境対策）
-    const enc=encodeURIComponent(payload);
-    const CHUNK=3000;                       // 1チャンクの文字数（URL長に収めつつ回数を減らす）
-    const n=Math.ceil(enc.length/CHUNK);
-    const sid=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     const sep=gasUrl.indexOf("?")<0?"?":"&";
-    let ok=true;
-    for(let i=0;i<n;i++){
-      const d=enc.slice(i*CHUNK,(i+1)*CHUNK);
-      const url=gasUrl+sep+"save=1&sess="+sid+"&i="+i+"&n="+n+"&d="+d;
-      try{
-        const rr=await fetch(url,{method:"GET",cache:"no-store"});
-        const jj=await rr.json();
-        if(!jj||!jj.ok){ok=false;lastPushErr="chunk"+i+":応答NG";break;}
-      }catch(ce){ok=false;lastPushErr="chunk"+i+":"+((ce&&ce.message)||ce);break;}
-    }
+    // POSTで1回送信（GASは分割保存対応済み。応答はCORSで読めないことがあるので no-cors）
+    try{await fetch(gasUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:payload});}
+    catch(pe){lastPushErr="POST:"+((pe&&pe.message)||pe);}
+    // GETで読み直して、確実に保存されたか検証（数回リトライ）
     let saved=false;
-    if(ok){
-      // 検証
+    for(let attempt=0;attempt<4&&!saved;attempt++){
+      await new Promise(r=>setTimeout(r,attempt===0?500:1200));
       try{
         const rv=await fetch(gasUrl+sep+"v="+Date.now(),{method:"GET",cache:"no-store"});
         const jv=await rv.json();
         if(jv&&jv.ok&&jv.state){
           const s=jv.state;
           const serverStamp=JSON.stringify(s.checks||{}).length+":"+JSON.stringify(s.today||{}).length+":"+JSON.stringify(s.lifehack||{}).length+":"+JSON.stringify(s.packing||[]).length;
-          lastPushResp="server="+serverStamp+" / want="+wantStamp+" / chunks="+n;
+          lastPushResp="server="+serverStamp+" / want="+wantStamp;
           if(serverStamp===wantStamp)saved=true;
         }
       }catch(e3){lastPushErr="VERIFY:"+((e3&&e3.message)||e3);}
@@ -3050,7 +3039,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v7.3";
+const APP_VERSION="OS v7.4";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

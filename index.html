@@ -1089,14 +1089,14 @@ async function push(){
     const wantStamp=stateStamp();
     // GET経由の分割保存（POSTが通らない環境対策）
     const enc=encodeURIComponent(payload);
-    const CHUNK=1200;                       // 1チャンクの文字数（URL長に収める）
+    const CHUNK=3000;                       // 1チャンクの文字数（URL長に収めつつ回数を減らす）
     const n=Math.ceil(enc.length/CHUNK);
     const sid=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     const sep=gasUrl.indexOf("?")<0?"?":"&";
     let ok=true;
     for(let i=0;i<n;i++){
       const d=enc.slice(i*CHUNK,(i+1)*CHUNK);
-      const url=gasUrl+sep+"save=1&sid="+sid+"&i="+i+"&n="+n+"&d="+d;
+      const url=gasUrl+sep+"save=1&sess="+sid+"&i="+i+"&n="+n+"&d="+d;
       try{
         const rr=await fetch(url,{method:"GET",cache:"no-store"});
         const jj=await rr.json();
@@ -1148,7 +1148,7 @@ let lastPushErr="",lastPushResp="",lastPushBytes=0;
   }catch(re){readTest="失敗:"+((re&&re.message)||re);}
   try{
     const tinySid="t"+Date.now().toString(36);
-    const turl=gasUrl+(gasUrl.indexOf("?")<0?"?":"&")+"save=1&sid="+tinySid+"&i=0&n=1&d="+encodeURIComponent('{"ping":1}');
+    const turl=gasUrl+(gasUrl.indexOf("?")<0?"?":"&")+"save=1&sess="+tinySid+"&i=0&n=1&d="+encodeURIComponent('{"ping":1}');
     const tr=await fetch(turl,{method:"GET",cache:"no-store"});
     saveTest="HTTP"+tr.status+(tr.ok?" OK":"");
     try{const tj=await tr.json();saveTest+=" / "+JSON.stringify(tj).slice(0,60);}catch(_){saveTest+=" / JSON不可";}
@@ -3050,7 +3050,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v7.2";
+const APP_VERSION="OS v7.3";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

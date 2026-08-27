@@ -1026,7 +1026,15 @@ async function pull(){
     if(j&&j.ok&&j.state){
       const s=j.state;
       if(Array.isArray(s.items)&&s.items.length){items=s.items;lset(K_ITEMS,items);}
-      if(s.checks){checks=s.checks;lset(K_CHECKS,checks);}
+      if(s.checks){
+        // マージ：未送信のローカル変更を消さないよう、日付単位で手元を優先
+        if(pendingPush){
+          const merged=Object.assign({},s.checks);
+          Object.keys(checks||{}).forEach(dk=>{merged[dk]=checks[dk];});
+          checks=merged;
+        }else{checks=s.checks;}
+        lset(K_CHECKS,checks);
+      }
       if(s.duties){duties=s.duties;lset(K_DUTY,duties);}
       if(Array.isArray(s.groups)&&s.groups.length){GROUPS=s.groups;lset(K_GROUPS,GROUPS);}
       if(s.memos){memos=s.memos;lset(K_MEMOS,memos);}
@@ -1105,7 +1113,15 @@ async function push(){
 let lastSavedStamp="";
 let lastPushErr="",lastPushResp="",lastPushBytes=0;
 // 診断：同期バーのメッセージをダブルタップで詳細表示
-(function(){const sm=document.getElementById("syncmsg");if(sm)sm.addEventListener("dblclick",()=>{alert("同期の診断\n\n直近の送信量: "+lastPushBytes+" バイト（"+(lastPushBytes/1024).toFixed(1)+" KB）\n直近のエラー: "+(lastPushErr||"なし")+"\n直近の応答: "+(lastPushResp||"なし")+"\nURL設定: "+(gasUrl?"あり":"なし"));});})();
+(function(){const sm=document.getElementById("syncmsg");if(sm)sm.addEventListener("dblclick",async()=>{
+  let srv="取得できず";
+  try{
+    const rv=await fetch(gasUrl+(gasUrl.indexOf("?")<0?"?":"&")+"v="+Date.now(),{method:"GET"});
+    const jv=await rv.json();
+    if(jv&&jv.state){srv="lastPostAt="+(jv.state.lastPostAt||"なし")+"\n  GASが受けたchecks長="+(jv.state.checksLen!==undefined?jv.state.checksLen:"記録なし")+"\n  updated="+(jv.state.updated||"なし");}
+  }catch(e){srv="GET失敗:"+((e&&e.message)||e);}
+  alert("同期の診断\n\n直近の送信量: "+lastPushBytes+" バイト（"+(lastPushBytes/1024).toFixed(1)+" KB）\n直近のエラー: "+(lastPushErr||"なし")+"\n直近の応答: "+(lastPushResp||"なし")+"\nURL設定: "+(gasUrl?"あり":"なし")+"\n\n【サーバーの現状】\n  "+srv);
+});})();
 
 /* ---------- logic ---------- */
 function allItems(){return calItems.length?items.concat(calItems):items;}
@@ -3000,7 +3016,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v6.6";
+const APP_VERSION="OS v6.8";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

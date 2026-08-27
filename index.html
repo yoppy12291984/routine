@@ -1106,12 +1106,11 @@ async function push(){
         }
       }catch(e3){lastPushErr="VERIFY:"+((e3&&e3.message)||e3);}
     }
-    if(saved){pendingPush=false;lastPushErr="";lastSavedStamp=wantStamp;setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));}
+    if(saved){pendingPush=false;lastPushErr="";setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));}
     else{setSync("err","保存失敗（後で再送）");}
   }catch(e){lastPushErr=(e&&e.message)?e.message:String(e);setSync("err","保存失敗（後で再送）");}
   finally{pushing=false;}
 }
-let lastSavedStamp="";
 let lastPushErr="",lastPushResp="",lastPushBytes=0;
 // 診断：同期バーのメッセージをダブルタップで詳細表示
 (function(){const sm=document.getElementById("syncmsg");if(sm)sm.addEventListener("dblclick",async()=>{
@@ -3039,7 +3038,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v7.4";
+const APP_VERSION="OS v7.5";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

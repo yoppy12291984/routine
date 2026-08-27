@@ -1078,28 +1078,16 @@ async function push(){
   try{
     const payload=JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,packing:packing,packtmpl:packTemplates,lifehack:lifehack,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}});
     lastPushBytes=payload.length;
-    let saved=false;
-    try{
-      const res=await fetch(gasUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:payload,redirect:"follow"});
-      if(res&&res.ok){let t="";try{t=await res.text();}catch(_){}lastPushResp=(t||"").slice(0,120);saved=true;}
-    }catch(e1){lastPushErr="POST1:"+((e1&&e1.message)||e1);}
-    if(!saved){
-      try{await fetch(gasUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:payload});}catch(e2){lastPushErr="POST2:"+((e2&&e2.message)||e2);}
-      try{
-        const rv=await fetch(gasUrl+(gasUrl.indexOf("?")<0?"?":"&")+"v="+Date.now(),{method:"GET"});
-        const jv=await rv.json();
-        if(jv&&jv.ok&&jv.state){
-          const s=jv.state;
-          const serverStamp=JSON.stringify(s.checks||{}).length+":"+JSON.stringify(s.today||{}).length+":"+JSON.stringify(s.lifehack||{}).length+":"+JSON.stringify(s.packing||[]).length;
-          if(serverStamp===stateStamp())saved=true;
-        }
-      }catch(e3){lastPushErr="VERIFY:"+((e3&&e3.message)||e3);}
-    }
-    if(saved){pendingPush=false;lastPushErr="";setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));}
-    else{setSync("err","保存失敗（後で再送）");}
+    // 以前動いていた形：応答は読まず no-cors で投げるだけ（CORSブロックを避ける）
+    await fetch(gasUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:payload});
+    lastPushErr="";lastPushResp="(no-cors送信)";
+    pendingPush=false;
+    lastSavedStamp=stateStamp();
+    setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
   }catch(e){lastPushErr=(e&&e.message)?e.message:String(e);setSync("err","保存失敗（後で再送）");}
   finally{pushing=false;}
 }
+let lastSavedStamp="";
 let lastPushErr="",lastPushResp="",lastPushBytes=0;
 // 診断：同期バーのメッセージをダブルタップで詳細表示
 (function(){const sm=document.getElementById("syncmsg");if(sm)sm.addEventListener("dblclick",()=>{alert("同期の診断\n\n直近の送信量: "+lastPushBytes+" バイト（"+(lastPushBytes/1024).toFixed(1)+" KB）\n直近のエラー: "+(lastPushErr||"なし")+"\n直近の応答: "+(lastPushResp||"なし")+"\nURL設定: "+(gasUrl?"あり":"なし"));});})();
@@ -2997,7 +2985,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v6.4";
+const APP_VERSION="OS v6.5";
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

@@ -254,7 +254,7 @@
 <div class="tabbar">
   <button class="tab on" id="tabCheck">Routine</button>
   <button class="tab" id="tabToday">Today</button>
-  <button class="tab" id="tabWorkout">Training</button>
+  <button class="tab" id="tabWorkout" style="display:none">Training</button>
   <button class="tab" id="tabCal">Calendar</button>
   <button class="tab" id="tabNotes">Notes</button>
   <button class="tab" id="tabInvest">Investment</button>
@@ -715,6 +715,8 @@
     <div class="field"><label>タブ（Lifehack）</label><input id="tn_life" placeholder="Lifehack"></div>
     <p class="hint" style="margin-top:14px">タブの並び順を変更できます（▲▼で移動）。</p>
     <div id="tabOrderList"></div>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:16px;cursor:pointer"><input type="checkbox" id="showTraining" style="width:18px;height:18px">Trainingタブを表示する</label>
+    <p class="hint">変更はすぐにこの端末へ保存されます。非表示にしてもトレーニングの記録は残ります。</p>
     <p class="hint" style="margin-top:14px">Todayの予定で使う「定型」を編集できます（起床・就寝・食事など）。</p>
     <div id="presetList"></div>
     <div class="row2" style="margin-top:8px">
@@ -1391,6 +1393,7 @@ document.getElementById("g_add").onclick=()=>{
 const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElementById("viewCal");
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
+  if(which==="workout"&&!trainingVisible)which="check";
   const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday"),vi=document.getElementById("viewInvest"),vp=document.getElementById("viewPacking"),vl=document.getElementById("viewLife");
   viewCheck.style.display=which==="check"?"block":"none";
   vw.style.display=which==="workout"?"block":"none";
@@ -2867,6 +2870,15 @@ function applyTabNames(){
 }
 applyTabNames();
 
+let trainingVisible=load("routine_training_visible_v1",false)===true;
+function applyTrainingVisibility(){
+  const btn=document.getElementById("tabWorkout");btn.style.display=trainingVisible?"":"none";
+  document.getElementById("showTraining").checked=trainingVisible;
+  if(!trainingVisible&&btn.classList.contains("on"))showTab("check");
+}
+document.getElementById("showTraining").onchange=e=>{trainingVisible=e.target.checked;lset("routine_training_visible_v1",trainingVisible);applyTrainingVisibility();};
+applyTrainingVisibility();
+
 const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes","invest","packing","life"];
 const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest",packing:"tabPacking",life:"tabLife"};
 let tabOrder=load("routine_taborder_v1",null);
@@ -3038,7 +3050,7 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v7.5";
+const APP_VERSION="OS v7.6"; // Trainingの表示を設定で切り替え
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

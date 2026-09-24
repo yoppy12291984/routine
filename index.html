@@ -3075,7 +3075,41 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v7.7"; // 全タブの表示と起動先を設定可能にする
+// 本文の横スワイプだけをタブ移動に使う。入力・ダイアログ・横スクロールは優先する。
+function installRoutineSwipe(){
+ let gesture=null;
+ const current=()=>visibleTabs().find(id=>document.getElementById(TAB_BTN_ID[id]).classList.contains('on'));
+ function blocked(target){
+  if(document.querySelector('dialog[open]')||document.activeElement?.matches('input,textarea,select,[contenteditable="true"]'))return true;
+  if(!target.closest('#viewCheck,#viewToday,#viewWorkout,#viewCal,#viewNotes,#viewInvest,#viewPacking,#viewLife'))return true;
+  if(target.closest('input,textarea,select,button,a,[contenteditable="true"],canvas,[draggable="true"]'))return true;
+  for(let el=target;el&&el!==document.body;el=el.parentElement){
+   if(el.scrollWidth>el.clientWidth+5&&/auto|scroll/.test(getComputedStyle(el).overflowX))return true;
+  }
+  return false;
+ }
+ document.addEventListener('touchstart',e=>{
+  gesture=null;if(e.touches.length!==1||blocked(e.target))return;
+  const t=e.touches[0];if(t.clientX<24||t.clientX>window.innerWidth-24)return;
+  gesture={x:t.clientX,y:t.clientY,id:t.identifier,time:Date.now(),tab:current()};
+ },{passive:true});
+ document.addEventListener('touchmove',e=>{
+  if(!gesture)return;if(e.touches.length!==1){gesture=null;return;}
+  const t=e.touches[0];if(Math.abs(t.clientY-gesture.y)>24&&Math.abs(t.clientY-gesture.y)>Math.abs(t.clientX-gesture.x))gesture=null;
+ },{passive:true});
+ document.addEventListener('touchcancel',()=>{gesture=null;},{passive:true});
+ document.addEventListener('touchend',e=>{
+  const start=gesture;gesture=null;if(!start||e.touches.length||Date.now()-start.time>1000||current()!==start.tab)return;
+  const t=Array.from(e.changedTouches).find(t=>t.identifier===start.id);if(!t)return;
+  const dx=t.clientX-start.x,dy=t.clientY-start.y;
+  if(Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.6||document.querySelector('dialog[open]'))return;
+  const order=visibleTabs(),next=order.indexOf(start.tab)+(dx<0?1:-1);
+  if(next>=0&&next<order.length)showTab(order[next]);
+ },{passive:true});
+}
+
+installRoutineSwipe();
+const APP_VERSION="OS v7.8"; // 可視タブの左右スワイプ移動
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

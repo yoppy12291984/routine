@@ -241,6 +241,7 @@
   .vw-cal{background:#0f1a2e}
   html[data-theme="light"] .vw-training{background:#f6ede0}
   html[data-theme="light"] .vw-cal{background:#e9eef6}
+#viewCheck,#viewToday,#viewWorkout,#viewCal,#viewNotes,#viewInvest,#viewPacking,#viewLife{min-height:calc(100vh - 125px);min-height:calc(100dvh - 125px)}
 </style>
 
 <div class="syncbar">
@@ -3109,7 +3110,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.8"; // 可視タブの左右スワイプ移動
+const APP_VERSION="OS v7.9"; // 短い画面でもスワイプ領域を確保
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

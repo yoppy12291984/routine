@@ -29,3 +29,8 @@ Trainingを既定で非表示にし、設定の「Trainingタブを表示する�
 ### 2026-09-24 左右スワイプ（OS v7.8）
 本文の左スワイプで次、右で前の可視タブへ移動。visibleTabsの並び順を使用し端では停止。入力・ボタン・リンク・canvas・ドラッグ・開いているdialog・横スクロール領域・画面端24px・縦スクロール・複数指・キャンセルを除外。app-rollout/routine-swipe.jsをビルドで同梱。tools/routine-swipe.test.cjsで上記の分岐を検証、生成HTML構文確認。iPhone/iPad実機の操作感は未確認。
 
+
+
+### 2026-09-24 Packingの余白スワイプ（OS v7.9）
+Packingの内容が短いと本文が途中で終わり、下側余白BODYからのスワイプが除外されることをDOMで確認。全タブ本文に画面高に応じたmin-heightを設け、余白も判定領域に含める。修正後の同座標がviewPacking内になることを確認。ユーザー指定は右スワイプで前の可視タブへ戻る操作。routine-swipe.test.cjsにPacking→前タブの回帰確認を追加し成功。実iPhone操作感は未確認。
+

@@ -24,3 +24,8 @@ Trainingを既定で非表示にし、設定の「Trainingタブを表示する�
 ### 2026-09-24 全タブの表示と起動先（OS v7.7）
 設定に全タブの表示チェックと起動時の画面を追加。routine_tab_visibility_v1 / routine_startup_tab_v1へ端末別に即時保存。旧Training表示設定を継承し、未設定Trainingは非表示。最低1タブを残し、表示中/起動先を隠す場合は残る先頭タブへ退避。表示名・順序・記録・GASは保持。ブラウザーでToday起動、再読み込み、複数タブ非表示、復元、最後の1タブ保護を確認。
 
+
+
+### 2026-09-24 左右スワイプ（OS v7.8）
+本文の左スワイプで次、右で前の可視タブへ移動。visibleTabsの並び順を使用し端では停止。入力・ボタン・リンク・canvas・ドラッグ・開いているdialog・横スクロール領域・画面端24px・縦スクロール・複数指・キャンセルを除外。app-rollout/routine-swipe.jsをビルドで同梱。tools/routine-swipe.test.cjsで上記の分岐を検証、生成HTML構文確認。iPhone/iPad実機の操作感は未確認。
+

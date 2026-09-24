@@ -715,8 +715,10 @@
     <div class="field"><label>タブ（Lifehack）</label><input id="tn_life" placeholder="Lifehack"></div>
     <p class="hint" style="margin-top:14px">タブの並び順を変更できます（▲▼で移動）。</p>
     <div id="tabOrderList"></div>
-    <label style="display:flex;align-items:center;gap:10px;margin-top:16px;cursor:pointer"><input type="checkbox" id="showTraining" style="width:18px;height:18px">Trainingタブを表示する</label>
-    <p class="hint">変更はすぐにこの端末へ保存されます。非表示にしてもトレーニングの記録は残ります。</p>
+    <p class="hint" style="margin-top:18px">表示するタブ（最低1つ選択）</p>
+    <div id="tabVisibilityList"></div>
+    <div class="field" style="margin-top:16px"><label for="startupTab">起動時の画面</label><select id="startupTab"></select></div>
+    <p class="hint">表示と起動時の画面は、すぐにこの端末へ保存されます。非表示にしても記録は残ります。</p>
     <p class="hint" style="margin-top:14px">Todayの予定で使う「定型」を編集できます（起床・就寝・食事など）。</p>
     <div id="presetList"></div>
     <div class="row2" style="margin-top:8px">
@@ -1393,7 +1395,7 @@ document.getElementById("g_add").onclick=()=>{
 const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElementById("viewCal");
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
-  if(which==="workout"&&!trainingVisible)which="check";
+  if(!visibleTabs().includes(which))which=visibleTabs()[0];
   const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday"),vi=document.getElementById("viewInvest"),vp=document.getElementById("viewPacking"),vl=document.getElementById("viewLife");
   viewCheck.style.display=which==="check"?"block":"none";
   vw.style.display=which==="workout"?"block":"none";
@@ -2870,15 +2872,6 @@ function applyTabNames(){
 }
 applyTabNames();
 
-let trainingVisible=load("routine_training_visible_v1",false)===true;
-function applyTrainingVisibility(){
-  const btn=document.getElementById("tabWorkout");btn.style.display=trainingVisible?"":"none";
-  document.getElementById("showTraining").checked=trainingVisible;
-  if(!trainingVisible&&btn.classList.contains("on"))showTab("check");
-}
-document.getElementById("showTraining").onchange=e=>{trainingVisible=e.target.checked;lset("routine_training_visible_v1",trainingVisible);applyTrainingVisibility();};
-applyTrainingVisibility();
-
 const TAB_ORDER_DEFAULT=["check","today","workout","cal","notes","invest","packing","life"];
 const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest",packing:"tabPacking",life:"tabLife"};
 let tabOrder=load("routine_taborder_v1",null);
@@ -2886,12 +2879,44 @@ if(!Array.isArray(tabOrder)||!tabOrder.length){tabOrder=TAB_ORDER_DEFAULT.slice(
 // 新しいタブが増えたら、既存の並び順の末尾に足す（既存の並びは尊重）
 TAB_ORDER_DEFAULT.forEach(k=>{if(!tabOrder.includes(k))tabOrder.push(k);});
 tabOrder=tabOrder.filter(k=>TAB_ORDER_DEFAULT.includes(k));
+let tabVisibility=load("routine_tab_visibility_v1",{});
+if(!tabVisibility||typeof tabVisibility!=="object"||Array.isArray(tabVisibility))tabVisibility={};
+if(typeof tabVisibility.workout!=="boolean")tabVisibility.workout=load("routine_training_visible_v1",false)===true;
+function visibleTabs(){return tabOrder.filter(k=>tabVisibility[k]!==false);}
+if(!visibleTabs().length)tabVisibility.check=true;
+let startupTab=load("routine_startup_tab_v1","check");
+if(!visibleTabs().includes(startupTab))startupTab=visibleTabs()[0];
+function applyTabVisibility(){
+  const active=tabOrder.find(k=>document.getElementById(TAB_BTN_ID[k]).classList.contains("on"));
+  tabOrder.forEach(k=>{document.getElementById(TAB_BTN_ID[k]).style.display=tabVisibility[k]===false?"none":"";});
+  if(active&&!visibleTabs().includes(active))showTab(visibleTabs()[0]);
+}
+function buildTabPreferences(){
+  const list=document.getElementById("tabVisibilityList");list.replaceChildren();
+  tabOrder.forEach(k=>{
+    const label=document.createElement("label");label.style.cssText="display:flex;align-items:center;gap:10px;margin:10px 0;cursor:pointer";
+    const input=document.createElement("input");input.type="checkbox";input.style.cssText="width:18px;height:18px";input.checked=tabVisibility[k]!==false;
+    input.disabled=input.checked&&visibleTabs().length===1;
+    label.append(input,document.createTextNode(tabNames[k]||TAB_DEFAULTS[k]));list.append(label);
+    input.onchange=()=>{
+      if(!input.checked&&visibleTabs().length===1){input.checked=true;return;}
+      tabVisibility[k]=input.checked;lset("routine_tab_visibility_v1",tabVisibility);
+      if(!visibleTabs().includes(startupTab)){startupTab=visibleTabs()[0];lset("routine_startup_tab_v1",startupTab);}
+      applyTabVisibility();buildTabPreferences();
+    };
+  });
+  const select=document.getElementById("startupTab");select.replaceChildren();
+  visibleTabs().forEach(k=>{const option=document.createElement("option");option.value=k;option.textContent=tabNames[k]||TAB_DEFAULTS[k];select.append(option);});
+  select.value=startupTab;
+  select.onchange=()=>{if(visibleTabs().includes(select.value)){startupTab=select.value;lset("routine_startup_tab_v1",startupTab);}};
+}
 function applyTabOrder(){
   const bar=document.querySelector(".tabbar");
   tabOrder.forEach(key=>{const btn=document.getElementById(TAB_BTN_ID[key]);if(btn)bar.appendChild(btn);});
 }
 applyTabOrder();
 function buildTabOrder(){
+  buildTabPreferences();
   const c=document.getElementById("tabOrderList");c.innerHTML="";
   tabOrder.forEach((key,i)=>{
     const nm=tabNames[key]||TAB_DEFAULTS[key];
@@ -3050,10 +3075,12 @@ document.getElementById("settingsSave").onclick=()=>{
 };
 
 /* ---------- boot ---------- */
-const APP_VERSION="OS v7.6"; // Trainingの表示を設定で切り替え
+const APP_VERSION="OS v7.7"; // 全タブの表示と起動先を設定可能にする
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();
+applyTabVisibility();
+showTab(startupTab);
 pull();
 // 未送信が残っていれば定期的に再送を試みる（保存漏れでチェックが消えるのを防ぐ）
 setInterval(()=>{if(pendingPush&&!pushing&&gasUrl)push();},20000);

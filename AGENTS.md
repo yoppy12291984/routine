@@ -19,3 +19,8 @@
 ### 2026-09-24 Trainingタブの非表示（OS v7.6）
 Trainingを既定で非表示にし、設定の「Trainingタブを表示する」で復元可能。routine_training_visible_v1に端末ごとに即時保存。記録・同期・並び順は保持。表示中にオフにした場合はRoutineへ戻る。共通ビルドはtools/routine-training-visibility.cjsで原本に適用。ブラウザーで初期非表示、復元、再読込保持、表示中の非表示切替を確認。
 
+
+
+### 2026-09-24 全タブの表示と起動先（OS v7.7）
+設定に全タブの表示チェックと起動時の画面を追加。routine_tab_visibility_v1 / routine_startup_tab_v1へ端末別に即時保存。旧Training表示設定を継承し、未設定Trainingは非表示。最低1タブを残し、表示中/起動先を隠す場合は残る先頭タブへ退避。表示名・順序・記録・GASは保持。ブラウザーでToday起動、再読み込み、複数タブ非表示、復元、最後の1タブ保護を確認。
+

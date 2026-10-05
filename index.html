@@ -3110,7 +3110,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.9"; // 短い画面でもスワイプ領域を確保
+const APP_VERSION="OS v7.10"; // 管理用コード入力時のモーダル競合を修正
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();
@@ -3176,6 +3176,8 @@ setInterval(()=>{
   if(!started){started=true;cfg.ensureUrl(apiUrl.href);const original=document.getElementById('suite-original-app');const script=document.createElement('script');script.textContent=original.textContent;document.body.append(script);mountSettings();new MutationObserver(mountSettings).observe(document.body,{childList:true,subtree:true});}
  }
  function lock(note){
+  // An open modal makes the sibling registration panel inert, regardless of z-index.
+  document.querySelectorAll('dialog[open]').forEach(d=>d.close());
   locked=true;document.documentElement.classList.add('suite-locked');panel.hidden=false;settings.open=false;settingsBody.replaceChildren();card.replaceChildren(text('h1',cfg.name),text('p','はじめに、この端末を登録します。次回からはそのまま開けます。'));
   card.append(text('p','ホーム画面に追加して使う場合は、そのアプリを開いた状態で登録してください。Safariとは別の登録になる場合があります。'));
   const form=document.createElement('form');const nameLabel=text('label','この端末の名前');const name=document.createElement('input');name.name='deviceName';name.autocomplete='off';name.value='自分の端末';name.maxLength=60;nameLabel.append(name);

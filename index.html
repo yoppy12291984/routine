@@ -3200,7 +3200,15 @@ setInterval(()=>{
    return;
   }
   const status=text('p','');status.setAttribute('role','status');card.append(status);
-  card.append(button('別の端末の登録コードを発行',async()=>{try{const r=await rpc('invite');status.textContent='24時間・1回限りのコード\n'+r.code;}catch(err){status.textContent=message(err);}}));
+  card.append(text('p','自分用は管理権限も引き継ぎます。家族用は通常の利用権限です。コードは24時間・1回限り。新しいアイコンでデータを確認するまで、古いアイコンは残してください。'));
+  function inviteButton(label,op,isManager){
+   const b=button(label,async()=>{b.disabled=true;status.textContent='コードを発行しています…';try{
+    const r=await rpc(op);if(r.manager!==isManager)throw Error('server_update_required');
+    status.textContent=(isManager?'自分用・管理権限付き':'家族用・通常権限')+'\n24時間・1回限りのコード\n'+r.code;
+   }catch(err){status.textContent=err.message==='server_update_required'||err.message==='unknown_action'?'サーバーの更新が必要です。コードはまだ使わず、更新完了後に再試行してください。':message(err);}finally{b.disabled=false;}});card.append(b);
+  }
+  inviteButton('自分の端末を追加・引き継ぐ','inviteManager',true);
+  inviteButton('家族などの端末を追加','invite',false);
   const list=document.createElement('div');card.append(list);
   try{const rows=await rpc('devices');for(const d of rows){const row=text('p',d.name+(d.manager?'（管理端末）':''));const remove=button('登録を解除',()=>{remove.textContent='もう一度押すと解除';remove.onclick=async()=>{try{await rpc('revoke',{id:d.id});row.remove();}catch(err){status.textContent=message(err);}};});row.append(remove);list.append(row);}}catch(err){status.textContent=message(err);}
  }

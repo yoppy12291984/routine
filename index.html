@@ -3191,7 +3191,14 @@ setInterval(()=>{
   const card=settingsBody;card.replaceChildren();
   card.append(text('p','この端末は登録済みです。日数によるログインし直しはありません。端末の保存データを消した場合は再登録が必要です。'));
   if(connectionNote)card.append(text('p',connectionNote));
-  if(!device.manager)return;
+  if(!device.manager){
+   card.append(text('p','この携帯から登録コードを発行するには、管理用コードで登録し直してください。保存済みのデータは消しません。'));
+   card.append(button('管理用コードを入力',()=>{
+    lock('発行された管理用コードを入力してください。登録に成功するまで、今の登録とデータを保持します。');
+    panel.querySelector('.suite-card').append(button('戻る（今の登録を使う）',()=>{open();}));
+   }));
+   return;
+  }
   const status=text('p','');status.setAttribute('role','status');card.append(status);
   card.append(button('別の端末の登録コードを発行',async()=>{try{const r=await rpc('invite');status.textContent='24時間・1回限りのコード\n'+r.code;}catch(err){status.textContent=message(err);}}));
   const list=document.createElement('div');card.append(list);

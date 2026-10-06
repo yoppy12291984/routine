@@ -242,6 +242,16 @@
   html[data-theme="light"] .vw-training{background:#f6ede0}
   html[data-theme="light"] .vw-cal{background:#e9eef6}
 #viewCheck,#viewToday,#viewWorkout,#viewCal,#viewNotes,#viewInvest,#viewPacking,#viewLife{min-height:calc(100vh - 125px);min-height:calc(100dvh - 125px)}
+/* Routine Quest: 日々の全達成をサイコロとレベルへ変える */
+.rq-card{margin:18px 0 22px;padding:16px;border:1px solid #735f37;border-radius:16px;background:linear-gradient(145deg,#171c23,#252b33);box-shadow:0 10px 26px #0003;color:#edf2ee;overflow:hidden}
+.rq-head{display:grid;grid-template-columns:66px 1fr auto;align-items:center;gap:12px;margin-bottom:12px}.rq-hero{width:66px;height:66px;object-fit:contain;filter:drop-shadow(0 5px 5px #0008)}
+.rq-kicker{margin:0 0 3px;font:700 10px/1 var(--mono);letter-spacing:.16em;color:#d8b56b}.rq-title{margin:0;font-size:19px}.rq-sub{margin:4px 0 0;font-size:11px;color:#aeb9b3}.rq-level{text-align:right}.rq-level span{display:block;font:700 9px/1 var(--mono);letter-spacing:.14em;color:#aeb9b3}.rq-level b{font:800 30px/1 var(--mono);color:#efc66f}
+.rq-meter{grid-column:2/4;height:7px;margin-top:-5px;border:1px solid #6b7470;border-radius:999px;background:#0e1217;overflow:hidden}.rq-meter i{display:block;height:100%;background:linear-gradient(90deg,#5fb3a3,#e0a458)}
+.rq-map-head{display:flex;justify-content:space-between;align-items:end;gap:10px;margin:4px 0 8px;font-size:11px;color:#aeb9b3}.rq-map-head b{color:#efc66f;font-size:16px}.rq-board{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;padding:5px;border:1px solid #555f5b;border-radius:10px;background:#0f151a;overflow:hidden}
+.rq-space{position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1;border:1px solid #39423f;border-radius:4px;background:#1c2429;color:#d8b56b;font-size:12px;overflow:hidden}.rq-space small{position:absolute;top:1px;left:2px;font:6px/1 var(--mono);color:#68736e}.rq-space.event{background:#27251d}.rq-space.current{border-color:#efc66f;background:#3a3020;box-shadow:inset 0 0 0 1px #efc66f}.rq-space img{width:95%;height:95%;object-fit:contain}
+.rq-action{display:flex;align-items:center;justify-content:center;gap:10px;min-height:42px;margin-top:12px;text-align:center}.rq-roll{min-height:44px;padding:9px 20px;border:1px solid #f0d08a;border-radius:999px;background:#c98a3c;color:#111;font:800 14px/1 var(--sans);box-shadow:0 4px 0 #725026;cursor:pointer}.rq-roll:disabled{opacity:.75}.rq-result{margin:0;font-size:12px;color:#cbd3cf}.rq-result b{color:#efc66f;font-size:18px}
+.rq-celebrate{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 35%,#384a5bea,#090c11f5);text-align:center}.rq-celebrate-card{width:min(88vw,380px);padding:24px 18px;border:3px solid #efc66f;border-radius:20px;background:linear-gradient(145deg,#202a35,#34303b);box-shadow:0 18px 60px #000b;color:#fff;animation:rq-pop .7s cubic-bezier(.2,.9,.25,1.2)}.rq-celebrate-card h2{margin:0;color:#f4d489;font-size:38px;letter-spacing:.08em}.rq-celebrate-card img{width:132px;height:132px;object-fit:contain}.rq-celebrate-card p{line-height:1.7}.rq-celebrate-card button{min-height:44px;padding:9px 24px;border:1px solid #f5dda5;border-radius:999px;background:#d8a64e;color:#17120a;font-weight:800;cursor:pointer}@keyframes rq-pop{from{opacity:0;transform:translateY(50px) scale(.78)}to{opacity:1;transform:none}}
+@media(max-width:430px){.rq-head{grid-template-columns:56px 1fr auto}.rq-hero{width:56px;height:56px}.rq-board{gap:2px;padding:4px}.rq-space{border-radius:3px}.rq-title{font-size:17px}}@media(prefers-reduced-motion:reduce){.rq-celebrate-card{animation:none}}
 </style>
 
 <div class="syncbar">
@@ -294,6 +304,18 @@
   <div class="progtrack"><div class="progfill" id="progfill"></div></div>
   <div class="proglabel"><span id="progtxt">0 / 0 完了</span><span id="progpct">0%</span></div>
 </div>
+
+<section class="rq-card" id="routineQuest" aria-label="Routine Quest">
+  <div class="rq-head">
+    <img class="rq-hero" src="routine-adventurer-v1.png?v=20261006" alt="冒険者アイコン">
+    <div><p class="rq-kicker">ROUTINE QUEST</p><h2 class="rq-title">習慣の大冒険</h2><p class="rq-sub" id="rqSub">全達成した日にサイコロを1回</p></div>
+    <div class="rq-level"><span>LEVEL</span><b id="rqLevel">1</b></div>
+    <div class="rq-meter" aria-label="次のレベルまで"><i id="rqMeter"></i></div>
+  </div>
+  <div class="rq-map-head"><span id="rqMapName">冒険マップ 1</span><span>合計 <b id="rqDistance">0</b> マス</span></div>
+  <div class="rq-board" id="rqBoard" aria-label="30マスの冒険マップ"></div>
+  <div class="rq-action" id="rqAction"><p class="rq-result">今日のルーチンをすべて達成すると進めます。</p></div>
+</section>
 
 <div id="groups"></div>
 
@@ -1176,7 +1198,74 @@ function freqLabel(it){
   if(it.freq==="once"){const o=(it.once||"").split("-");return o.length===3?`${+o[1]}/${+o[2]}`:"単発";}
   return"";
 }
+
+/* ---------- Routine Quest ---------- */
+const RQ_KEY="__routineQuest",RQ_MAX_LEVEL=99,RQ_BOARD_SIZE=30;
+function rqLevel(count){return Math.min(RQ_MAX_LEVEL,Math.floor(Math.max(0,count)/10)+1);}
+function rqDice(date,index){
+  const text=String(date||"")+"|"+String(index||0)+"|routine-quest-v1";let hash=2166136261;
+  for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}
+  return(hash>>>0)%6+1;
+}
+function rqState(){
+  let q=checks[RQ_KEY];
+  if(!q||typeof q!=="object"||Array.isArray(q)){q={rewards:{},rolled:{},celebratedLevel:1,initialized:false};checks[RQ_KEY]=q;}
+  if(!q.rewards||typeof q.rewards!=="object")q.rewards={};
+  if(!q.rolled||typeof q.rolled!=="object")q.rolled={};
+  q.celebratedLevel=Math.max(1,Number(q.celebratedLevel)||1);
+  return q;
+}
+function rqDate(key){const p=String(key).split("-").map(Number);if(p.length!==3||p.some(n=>!Number.isFinite(n)))return null;const d=new Date(p[0],p[1]-1,p[2]);d.setHours(0,0,0,0);return d;}
+function rqDue(key){const d=rqDate(key);return d?items.filter(it=>dueToday(it,d)):[];}
+function rqComplete(key){const due=rqDue(key),dc=checks[key]||{};return due.length>0&&due.every(it=>dc[it.id]);}
+function rqRewardDates(){return Object.keys(rqState().rewards).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)).sort();}
+function rqMigrateLegacy(){
+  const q=rqState();if(q.initialized)return false;
+  const todayKey=iso(new Date());let changed=false;
+  Object.keys(checks).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)&&k<todayKey).sort().forEach(key=>{
+    if(!q.rewards[key]&&rqComplete(key)){const index=Object.keys(q.rewards).length+1;q.rewards[key]={roll:rqDice(key,index),earnedAt:key};q.rolled[key]=true;changed=true;}
+  });
+  q.initialized=true;q.celebratedLevel=rqLevel(Object.keys(q.rewards).length);lset(K_CHECKS,checks);
+  if(changed)pushSoon();return changed;
+}
+function rqEnsureAward(key){
+  const q=rqState();if(q.rewards[key]||!rqComplete(key))return false;
+  const index=rqRewardDates().length+1;q.rewards[key]={roll:rqDice(key,index),earnedAt:new Date().toISOString()};q.rolled[key]=false;
+  lset(K_CHECKS,checks);pushSoon();return true;
+}
+function rqJourney(){
+  const q=rqState(),dates=rqRewardDates(),steps=dates.map((d,i)=>Number(q.rewards[d].roll)||rqDice(d,i+1));
+  return{dates,steps,total:steps.reduce((a,b)=>a+b,0)};
+}
+function rqShowLevel(level){
+  document.getElementById("rqCelebration")?.remove();
+  const el=document.createElement("div");el.id="rqCelebration";el.className="rq-celebrate";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");el.setAttribute("aria-label","レベルアップ");
+  el.innerHTML=`<section class="rq-celebrate-card"><h2>LEVEL UP!</h2><img src="routine-adventurer-v1.png?v=20261006" alt="冒険者アイコン"><p>ルーチンの力で<br><b>LV ${level}</b> になりました！</p><button type="button">冒険を続ける</button></section>`;
+  document.body.appendChild(el);const close=()=>el.remove();el.querySelector("button").onclick=close;el.onclick=e=>{if(e.target===el)close();};el.querySelector("button").focus();
+}
+function rqRoll(button,date,value){
+  if(!button||button.disabled)return;button.disabled=true;let n=0;
+  const timer=setInterval(()=>{button.textContent="🎲 "+(n%6+1);n++;if(n<12)return;clearInterval(timer);button.textContent="🎲 "+value+"！";
+    const q=rqState();q.rolled[date]=true;const level=rqLevel(rqRewardDates().length),levelUp=level>q.celebratedLevel;q.celebratedLevel=Math.max(q.celebratedLevel,level);lset(K_CHECKS,checks);pushSoon();
+    setTimeout(()=>{rqRender(iso(cur));if(levelUp)rqShowLevel(level);},650);
+  },70);
+}
+function rqRender(selectedKey){
+  rqEnsureAward(selectedKey);
+  const q=rqState(),trip=rqJourney(),count=trip.dates.length,level=rqLevel(count),progress=level>=RQ_MAX_LEVEL?10:count%10;
+  document.getElementById("rqLevel").textContent=level;document.getElementById("rqMeter").style.width=(progress*10)+"%";
+  document.getElementById("rqSub").textContent=level>=RQ_MAX_LEVEL?count+"日達成・LEVEL MAX":count+"日達成・次のレベルまであと"+(10-progress)+"日";
+  const map=Math.floor(trip.total/RQ_BOARD_SIZE)+1,pos=trip.total%RQ_BOARD_SIZE,events={4:"◆",9:"★",14:"⚔",19:"♜",24:"✦",29:"♛"};
+  document.getElementById("rqMapName").textContent="冒険マップ "+map;document.getElementById("rqDistance").textContent=trip.total;
+  document.getElementById("rqBoard").innerHTML=Array.from({length:RQ_BOARD_SIZE},(_,i)=>`<div class="rq-space${i===pos?" current":""}${events[i]?" event":""}"><small>${i+1}</small>${i===pos?'<img src="routine-adventurer-v1.png?v=20261006" alt="現在位置">':(events[i]||"")}</div>`).join("");
+  const pending=trip.dates.find(d=>q.rolled[d]!==true),action=document.getElementById("rqAction");
+  if(pending){const value=Number(q.rewards[pending].roll)||1;action.innerHTML='<button type="button" class="rq-roll">🎲 サイコロを振る</button>';action.querySelector("button").onclick=e=>rqRoll(e.currentTarget,pending,value);}
+  else if(rqComplete(selectedKey))action.innerHTML='<p class="rq-result">この日の全達成を記録しました。次のルーチンも進めよう。</p>';
+  else action.innerHTML='<p class="rq-result">この日の対象ルーチンをすべて達成すると、サイコロを1回振れます。</p>';
+}
+window.RoutineQuestCore={levelFor:rqLevel,diceFor:rqDice,maxLevel:RQ_MAX_LEVEL};
 function render(){
+  rqMigrateLegacy();
   const key=iso(cur);
   document.getElementById("dnum").textContent=cur.getDate();
   document.getElementById("dym").textContent=cur.getFullYear()+"."+String(cur.getMonth()+1).padStart(2,"0");
@@ -1220,6 +1309,7 @@ function render(){
   document.getElementById("progtxt").textContent=`${done} / ${total} 完了`;
   document.getElementById("progpct").textContent=pct+"%";
   document.getElementById("streak").textContent="🔥 連続 "+streak()+"日";
+  rqRender(key);
 }
 function toggle(key,id){
   if(!checks[key])checks[key]={};
@@ -3110,7 +3200,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.11"; // 管理用コード入力時のモーダル競合を修正
+const APP_VERSION="OS v7.12"; // Routine Quest（全達成・サイコロ・LV99）
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

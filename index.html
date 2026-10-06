@@ -252,6 +252,7 @@
 .rq-action{display:flex;align-items:center;justify-content:center;gap:10px;min-height:42px;margin-top:12px;text-align:center}.rq-roll{min-height:44px;padding:9px 20px;border:1px solid #f0d08a;border-radius:999px;background:#c98a3c;color:#111;font:800 14px/1 var(--sans);box-shadow:0 4px 0 #725026;cursor:pointer}.rq-roll:disabled{opacity:.75}.rq-result{margin:0;font-size:12px;color:#cbd3cf}.rq-result b{color:#efc66f;font-size:18px}
 .rq-celebrate{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 35%,#384a5bea,#090c11f5);text-align:center}.rq-celebrate-card{width:min(88vw,380px);padding:24px 18px;border:3px solid #efc66f;border-radius:20px;background:linear-gradient(145deg,#202a35,#34303b);box-shadow:0 18px 60px #000b;color:#fff;animation:rq-pop .7s cubic-bezier(.2,.9,.25,1.2)}.rq-celebrate-card h2{margin:0;color:#f4d489;font-size:38px;letter-spacing:.08em}.rq-celebrate-card img{width:132px;height:132px;object-fit:contain}.rq-celebrate-card p{line-height:1.7}.rq-celebrate-card button{min-height:44px;padding:9px 24px;border:1px solid #f5dda5;border-radius:999px;background:#d8a64e;color:#17120a;font-weight:800;cursor:pointer}@keyframes rq-pop{from{opacity:0;transform:translateY(50px) scale(.78)}to{opacity:1;transform:none}}
 @media(max-width:600px){.rq-board{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:5px}}@media(max-width:430px){.rq-head{grid-template-columns:76px minmax(0,1fr) auto;gap:8px}.rq-hero{width:76px;height:96px}.rq-space{border-radius:3px}.rq-title{font-size:17px}}@media(prefers-reduced-motion:reduce){.rq-celebrate-card{animation:none}}
+.rq-space.current .rq-event{display:none}
 </style>
 
 <div class="syncbar">
@@ -1236,7 +1237,7 @@ function rqEnsureAward(key){
 }
 function rqJourney(){
   const q=rqState(),dates=rqRewardDates(),steps=dates.map((d,i)=>Number(q.rewards[d].roll)||rqDice(d,i+1));
-  return{dates,steps,total:steps.reduce((a,b)=>a+b,0)};
+  return{dates,steps,total:steps.reduce((a,b,i)=>a+(q.rolled[dates[i]]===true?b:0),0)};
 }
 function rqShowLevel(level){
   document.getElementById("rqCelebration")?.remove();
@@ -1244,11 +1245,17 @@ function rqShowLevel(level){
   el.innerHTML=`<section class="rq-celebrate-card"><h2>LEVEL UP!</h2><img src="routine-adventurer-v1.png?v=20261006" alt="冒険者アイコン"><p>ルーチンの力で<br><b>LV ${level}</b> になりました！</p><button type="button">冒険を続ける</button></section>`;
   document.body.appendChild(el);const close=()=>el.remove();el.querySelector("button").onclick=close;el.onclick=e=>{if(e.target===el)close();};el.querySelector("button").focus();
 }
+let rqRolling=false;
 function rqRoll(button,date,value){
-  if(!button||button.disabled)return;button.disabled=true;let n=0;
+  if(!button||button.disabled||rqRolling||rqState().rolled[date]===true)return;rqRolling=true;button.disabled=true;let n=0;
   const timer=setInterval(()=>{button.textContent="🎲 "+(n%6+1);n++;if(n<12)return;clearInterval(timer);button.textContent="🎲 "+value+"！";
-    const q=rqState();q.rolled[date]=true;const level=rqLevel(rqRewardDates().length),levelUp=level>q.celebratedLevel;q.celebratedLevel=Math.max(q.celebratedLevel,level);lset(K_CHECKS,checks);pushSoon();
-    setTimeout(()=>{rqRender(iso(cur));if(levelUp)rqShowLevel(level);},650);
+    const cells=Array.from(document.getElementById('rqBoard')?.children||[]),start=cells.findIndex(c=>c.classList.contains('current'));let step=0;
+    const advance=()=>{
+      if(step>=value){const q=rqState();q.rolled[date]=true;q.lastRoll={date,value};const level=rqLevel(rqRewardDates().length),levelUp=level>q.celebratedLevel;q.celebratedLevel=Math.max(q.celebratedLevel,level);lset(K_CHECKS,checks);pushSoon();rqRolling=false;rqRender(iso(cur));if(levelUp)rqShowLevel(level);return;}
+      const prev=cells[(start+step)%30],next=cells[(start+step+1)%30],hero=prev?.querySelector('img');
+      if(hero&&next){prev.classList.remove('current');next.classList.add('current');next.appendChild(hero);}
+      step++;setTimeout(advance,220);
+    };setTimeout(advance,450);
   },70);
 }
 function rqRender(selectedKey){
@@ -1258,10 +1265,10 @@ function rqRender(selectedKey){
   document.getElementById("rqSub").textContent=level>=RQ_MAX_LEVEL?count+"日達成・LEVEL MAX":count+"日達成・次のレベルまであと"+(10-progress)+"日";
   const map=Math.floor(trip.total/RQ_BOARD_SIZE)+1,pos=trip.total%RQ_BOARD_SIZE,events={4:"◆",9:"★",14:"⚔",19:"♜",24:"✦",29:"♛"};
   document.getElementById("rqMapName").textContent="冒険マップ "+map;document.getElementById("rqDistance").textContent=trip.total;
-  document.getElementById("rqBoard").innerHTML=Array.from({length:RQ_BOARD_SIZE},(_,i)=>`<div class="rq-space${i===pos?" current":""}${events[i]?" event":""}"><small>${i+1}</small>${i===pos?'<img src="routine-adventurer-v1.png?v=20261006" alt="現在位置">':(events[i]||"")}</div>`).join("");
+  document.getElementById("rqBoard").innerHTML=Array.from({length:RQ_BOARD_SIZE},(_,i)=>`<div class="rq-space${i===pos?" current":""}${events[i]?" event":""}"><small>${i+1}</small>${events[i]?'<span class="rq-event">'+events[i]+'</span>':''}${i===pos?'<img src="routine-adventurer-v1.png?v=20261006" alt="現在位置">':''}</div>`).join("");
   const pending=trip.dates.find(d=>q.rolled[d]!==true),action=document.getElementById("rqAction");
   if(pending){const value=Number(q.rewards[pending].roll)||1;action.innerHTML='<button type="button" class="rq-roll">🎲 サイコロを振る</button>';action.querySelector("button").onclick=e=>rqRoll(e.currentTarget,pending,value);}
-  else if(rqComplete(selectedKey))action.innerHTML='<p class="rq-result">この日の全達成を記録しました。次のルーチンも進めよう。</p>';
+  else if(q.lastRoll)action.innerHTML='<p class="rq-result">🎲 <b>'+Number(q.lastRoll.value)+'</b> が出て、'+Number(q.lastRoll.value)+'マス進みました。マップ '+map+'・'+(pos+1)+'マス目に到着！</p>';
   else action.innerHTML='<p class="rq-result">この日の対象ルーチンをすべて達成すると、サイコロを1回振れます。</p>';
 }
 window.RoutineQuestCore={levelFor:rqLevel,diceFor:rqDice,maxLevel:RQ_MAX_LEVEL};
@@ -3201,7 +3208,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.15"; // キャラクター拡大・スマホのマップを6列化
+const APP_VERSION="OS v7.16"; // サイコロ確定後にマップを進める
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

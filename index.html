@@ -244,14 +244,14 @@
 #viewCheck,#viewToday,#viewWorkout,#viewCal,#viewNotes,#viewInvest,#viewPacking,#viewLife{min-height:calc(100vh - 125px);min-height:calc(100dvh - 125px)}
 /* Routine Quest: 日々の全達成をサイコロとレベルへ変える */
 .rq-card{margin:18px 0 22px;padding:16px;border:1px solid #735f37;border-radius:16px;background:linear-gradient(145deg,#171c23,#252b33);box-shadow:0 10px 26px #0003;color:#edf2ee;overflow:hidden}
-.rq-head{display:grid;grid-template-columns:66px 1fr auto;align-items:center;gap:12px;margin-bottom:12px}.rq-hero{width:66px;height:66px;object-fit:contain;filter:drop-shadow(0 5px 5px #0008)}
+.rq-head{display:grid;grid-template-columns:88px minmax(0,1fr) auto;align-items:center;gap:12px;margin-bottom:12px}.rq-hero{width:88px;height:104px;object-fit:contain;filter:drop-shadow(0 5px 5px #0008)}
 .rq-kicker{margin:0 0 3px;font:700 10px/1 var(--mono);letter-spacing:.16em;color:#d8b56b}.rq-title{margin:0;font-size:19px}.rq-sub{margin:4px 0 0;font-size:11px;color:#aeb9b3}.rq-level{text-align:right}.rq-level span{display:block;font:700 9px/1 var(--mono);letter-spacing:.14em;color:#aeb9b3}.rq-level b{font:800 30px/1 var(--mono);color:#efc66f}
 .rq-meter{grid-column:2/4;height:7px;margin-top:-5px;border:1px solid #6b7470;border-radius:999px;background:#0e1217;overflow:hidden}.rq-meter i{display:block;height:100%;background:linear-gradient(90deg,#5fb3a3,#e0a458)}
 .rq-map-head{display:flex;justify-content:space-between;align-items:end;gap:10px;margin:4px 0 8px;font-size:11px;color:#aeb9b3}.rq-map-head b{color:#efc66f;font-size:16px}.rq-board{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px;padding:5px;border:1px solid #555f5b;border-radius:10px;background:#0f151a;overflow:hidden}
 .rq-space{position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1;border:1px solid #39423f;border-radius:4px;background:#1c2429;color:#d8b56b;font-size:12px;overflow:hidden}.rq-space small{position:absolute;top:1px;left:2px;font:6px/1 var(--mono);color:#68736e}.rq-space.event{background:#27251d}.rq-space.current{border-color:#efc66f;background:#3a3020;box-shadow:inset 0 0 0 1px #efc66f}.rq-space img{width:95%;height:95%;object-fit:contain}
 .rq-action{display:flex;align-items:center;justify-content:center;gap:10px;min-height:42px;margin-top:12px;text-align:center}.rq-roll{min-height:44px;padding:9px 20px;border:1px solid #f0d08a;border-radius:999px;background:#c98a3c;color:#111;font:800 14px/1 var(--sans);box-shadow:0 4px 0 #725026;cursor:pointer}.rq-roll:disabled{opacity:.75}.rq-result{margin:0;font-size:12px;color:#cbd3cf}.rq-result b{color:#efc66f;font-size:18px}
 .rq-celebrate{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 35%,#384a5bea,#090c11f5);text-align:center}.rq-celebrate-card{width:min(88vw,380px);padding:24px 18px;border:3px solid #efc66f;border-radius:20px;background:linear-gradient(145deg,#202a35,#34303b);box-shadow:0 18px 60px #000b;color:#fff;animation:rq-pop .7s cubic-bezier(.2,.9,.25,1.2)}.rq-celebrate-card h2{margin:0;color:#f4d489;font-size:38px;letter-spacing:.08em}.rq-celebrate-card img{width:132px;height:132px;object-fit:contain}.rq-celebrate-card p{line-height:1.7}.rq-celebrate-card button{min-height:44px;padding:9px 24px;border:1px solid #f5dda5;border-radius:999px;background:#d8a64e;color:#17120a;font-weight:800;cursor:pointer}@keyframes rq-pop{from{opacity:0;transform:translateY(50px) scale(.78)}to{opacity:1;transform:none}}
-@media(max-width:430px){.rq-head{grid-template-columns:56px 1fr auto}.rq-hero{width:56px;height:56px}.rq-board{gap:2px;padding:4px}.rq-space{border-radius:3px}.rq-title{font-size:17px}}@media(prefers-reduced-motion:reduce){.rq-celebrate-card{animation:none}}
+@media(max-width:600px){.rq-board{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:5px}}@media(max-width:430px){.rq-head{grid-template-columns:76px minmax(0,1fr) auto;gap:8px}.rq-hero{width:76px;height:96px}.rq-space{border-radius:3px}.rq-title{font-size:17px}}@media(prefers-reduced-motion:reduce){.rq-celebrate-card{animation:none}}
 </style>
 
 <div class="syncbar">
@@ -3201,7 +3201,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.14"; // クエストの日本語見出しを削除
+const APP_VERSION="OS v7.15"; // キャラクター拡大・スマホのマップを6列化
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

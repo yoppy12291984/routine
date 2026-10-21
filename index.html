@@ -912,6 +912,7 @@ const K_ITEMS="routine_items_v2",K_CHECKS="routine_checks_v2",K_DUTY="routine_du
 function load(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function lset(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function safeColor(value){return /^#[0-9a-f]{6}$/i.test(String(value))?value:'#7f8cd6';}
 function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
 let items=load(K_ITEMS,null);
@@ -1293,8 +1294,8 @@ function render(){
     const list=due.filter(it=>it.group===gr.id);if(!list.length)return;
     const wrap=document.createElement("div");wrap.className="group";
     const h=document.createElement("div");h.className="ghead";
-    h.innerHTML=`<span class="gdot" style="background:${gr.color}"></span>
-      <span class="gname" style="color:${gr.color}">${gr.name}</span>
+    h.innerHTML=`<span class="gdot" style="background:${safeColor(gr.color)}"></span>
+      <span class="gname" style="color:${safeColor(gr.color)}">${esc(gr.name)}</span>
       <span class="gsub">${gr.sub}</span><span class="gline"></span>`;
     wrap.appendChild(h);
     const ul=document.createElement("ul");
@@ -1459,7 +1460,7 @@ function buildGroups(){
     const count=ctx.items().filter(it=>it.group===gr.id).length;
     const isCal=(gr.id==="cal"&&groupMode==="rt");
     const row=document.createElement("div");row.className="manage-item";
-    row.innerHTML=`<span class="gdot" style="background:${gr.color};width:11px;height:11px;border-radius:3px"></span>
+    row.innerHTML=`<span class="gdot" style="background:${safeColor(gr.color)};width:11px;height:11px;border-radius:3px"></span>
       <input class="gname-in" value="${esc(gr.name)}" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:7px 9px;border-radius:7px;font-size:14px">
       <span class="mmeta">${isCal?"カレンダー":count+"件"}</span>
       <button class="edit gsave">保存</button><button class="del">×</button>`;
@@ -1664,8 +1665,8 @@ function wRender(){
     const list=due.filter(it=>it.group===gr.id);if(!list.length)return;
     const wrap=document.createElement("div");wrap.className="group";
     const h=document.createElement("div");h.className="ghead";
-    h.innerHTML=`<span class="gdot" style="background:${gr.color}"></span>
-      <span class="gname" style="color:${gr.color}">${gr.name}</span>
+    h.innerHTML=`<span class="gdot" style="background:${safeColor(gr.color)}"></span>
+      <span class="gname" style="color:${safeColor(gr.color)}">${esc(gr.name)}</span>
       <span class="gsub">${gr.sub||""}</span><span class="gline"></span>`;
     wrap.appendChild(h);
     const ul=document.createElement("ul");
@@ -1857,7 +1858,7 @@ function tRender(){
     const c=catOf(p.cat);
     const row=document.createElement("div");row.className="plan-row";row.style.borderLeftColor=c.color;
     const time=(p.start||"--:--")+"〜"+(p.end||"--:--");
-    row.innerHTML=`<span class="pt">${esc(time)}</span><span class="pl"><span class="pcat" style="background:${c.color}"></span>${esc(p.label)}</span><span class="pcatname" style="color:${c.color}">${esc(c.name)}</span>${p.fromCal?'<span class="pcal">cal</span>':''}`;
+    row.innerHTML=`<span class="pt">${esc(time)}</span><span class="pl"><span class="pcat" style="background:${safeColor(c.color)}"></span>${esc(p.label)}</span><span class="pcatname" style="color:${safeColor(c.color)}">${esc(c.name)}</span>${p.fromCal?'<span class="pcal">cal</span>':''}`;
     row.onclick=()=>openPlan(p);
     pl.appendChild(row);
   });
@@ -2122,21 +2123,21 @@ function drawCharts(d){
   // legend
   const lg=document.getElementById("chartLegend");
   const used=T_CATS.filter(c=>totals[c.id]);
-  lg.innerHTML=used.map(c=>`<span class="lg"><span class="sw" style="background:${c.color}"></span>${c.name} ${(totals[c.id]/60).toFixed(1)}h</span>`).join("");
+  lg.innerHTML=used.map(c=>`<span class="lg"><span class="sw" style="background:${safeColor(c.color)}"></span>${esc(c.name)} ${(totals[c.id]/60).toFixed(1)}h</span>`).join("");
 }
 function arcPath(minA,minB,color){
   const r=70;
   const a1=(minA/1440)*2*Math.PI-Math.PI/2, a2=(minB/1440)*2*Math.PI-Math.PI/2;
   const x1=100+r*Math.cos(a1),y1=100+r*Math.sin(a1),x2=100+r*Math.cos(a2),y2=100+r*Math.sin(a2);
   const large=(minB-minA)>720?1:0;
-  return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${color}" stroke-width="16" stroke-linecap="butt"/>`;
+  return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${safeColor(color)}" stroke-width="16" stroke-linecap="butt"/>`;
 }
 function donutArc(f1,f2,color){
   const r=70,cx=100,cy=100;
   const a1=f1*2*Math.PI-Math.PI/2, a2=f2*2*Math.PI-Math.PI/2;
   const x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1),x2=cx+r*Math.cos(a2),y2=cy+r*Math.sin(a2);
   const large=(f2-f1)>0.5?1:0;
-  return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${color}" stroke-width="28"/>`;
+  return `<path d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${safeColor(color)}" stroke-width="28"/>`;
 }
 /* 今月の集計：区分ごとの合計時間 */
 function renderMonthSummary(){
@@ -2156,7 +2157,7 @@ function renderMonthSummary(){
   box.innerHTML=used.map(c=>{
     const h=(totals[c.id]/60).toFixed(1);
     const w=Math.round(totals[c.id]/max*100);
-    return `<div class="msum-row"><span class="sw" style="background:${c.color}"></span><span class="nm">${c.name}</span><span class="bar"><div style="width:${w}%;background:${c.color}"></div></span><span class="hr">${h}h</span></div>`;
+    return `<div class="msum-row"><span class="sw" style="background:${safeColor(c.color)}"></span><span class="nm">${esc(c.name)}</span><span class="bar"><div style="width:${w}%;background:${safeColor(c.color)}"></div></span><span class="hr">${h}h</span></div>`;
   }).join("");
 }
 
@@ -3062,7 +3063,7 @@ function buildDayDefaults(){
     const cat=catOf(dd.cat);
     const dayStr=WD_ORDER.filter(w=>(dd.days||[]).includes(w)).map(w=>WD[w]).join("");
     const row=document.createElement("div");row.className="manage-item";
-    row.innerHTML=`<span class="gdot" style="background:${cat.color};width:10px;height:10px;border-radius:2px"></span>
+    row.innerHTML=`<span class="gdot" style="background:${safeColor(cat.color)};width:10px;height:10px;border-radius:2px"></span>
       <span class="mlabel">${esc(dd.label)}</span>
       <span class="mmeta">${dayStr} ${dd.start||""}${dd.end?"-"+dd.end:""}</span>
       <button class="del">×</button>`;
@@ -3090,9 +3091,9 @@ function buildCatList(){
     const row=document.createElement("div");row.className="manage-item";
     const sumBtn=`<button class="edit sumtog" title="活動別合計・今月の集計に含めるか">${cat.exclude?"集計外":"集計"}</button>`;
     if(isOther){
-      row.innerHTML=`<span class="gdot" style="background:${cat.color};width:11px;height:11px;border-radius:2px"></span><span class="mlabel">${esc(cat.name)}</span>${sumBtn}<span class="mmeta">既定</span>`;
+      row.innerHTML=`<span class="gdot" style="background:${safeColor(cat.color)};width:11px;height:11px;border-radius:2px"></span><span class="mlabel">${esc(cat.name)}</span>${sumBtn}<span class="mmeta">既定</span>`;
     }else{
-      row.innerHTML=`<input class="cat-color" type="color" value="${cat.color}" title="色を変更" style="width:22px;height:22px;padding:0;border:1px solid var(--line);border-radius:5px;background:none;cursor:pointer;flex:none">
+      row.innerHTML=`<input class="cat-color" type="color" value="${safeColor(cat.color)}" title="色を変更" style="width:22px;height:22px;padding:0;border:1px solid var(--line);border-radius:5px;background:none;cursor:pointer;flex:none">
         <input class="gname-in" value="${esc(cat.name)}" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:7px 9px;border-radius:7px;font-size:14px">
         ${sumBtn}<button class="edit gsave">保存</button><button class="del">×</button>`;
       const input=row.querySelector(".gname-in");
@@ -3142,7 +3143,7 @@ function buildPresetList(){
   tPresets.forEach(pr=>{
     const cat=catOf(pr.cat);
     const row=document.createElement("div");row.className="manage-item";
-    row.innerHTML=`<span class="gdot" style="background:${cat.color};width:10px;height:10px;border-radius:2px"></span><span class="mlabel">${esc(pr.name)}</span><span class="mmeta">${cat.name}${pr.start?" "+pr.start:""}</span><button class="del">×</button>`;
+    row.innerHTML=`<span class="gdot" style="background:${safeColor(cat.color)};width:10px;height:10px;border-radius:2px"></span><span class="mlabel">${esc(pr.name)}</span><span class="mmeta">${esc(cat.name)}${pr.start?" "+esc(pr.start):""}</span><button class="del">×</button>`;
     row.querySelector(".del").onclick=()=>{tPresets=tPresets.filter(x=>x.id!==pr.id);lset("routine_tpresets_v1",tPresets);buildPresetList();};
     c.appendChild(row);
   });

@@ -284,6 +284,8 @@
 .adv-family-sprite{object-fit:contain;image-rendering:auto}.adv-party{grid-template-columns:repeat(3,minmax(0,1fr))}.adv-party-card{flex-direction:column;padding:10px 7px}.adv-portrait{width:100%;height:135px}.adv-party-info{width:100%}.adv-name{font-size:12px}.adv-actor{width:72px;height:94px}.adv-allies{display:flex;gap:0;right:5%;align-items:center}.adv-actor:nth-child(2){margin-top:46px}.adv-actor:nth-child(3){margin-top:90px}.adv-arena{height:270px}.adv-character-select{grid-template-columns:repeat(3,minmax(0,1fr))}.adv-character-select button{font-size:11px;padding:10px 3px}.adv-story-portrait{width:90px;height:115px}@media(min-width:600px){.adv-portrait{height:210px}.adv-actor{width:100px;height:135px}.adv-arena{height:340px}}
 
 #viewAdventure .adv-allies{flex-direction:row;right:3%;bottom:15px;gap:0}#viewAdventure .adv-actor{height:110px;width:64px;margin-right:0}#viewAdventure .adv-arena{height:250px}#viewAdventure .adv-actor:nth-child(2){margin-top:40px}#viewAdventure .adv-actor:nth-child(3){margin-top:80px}@media(min-width:600px){#viewAdventure .adv-actor{width:110px;height:150px}#viewAdventure .adv-arena{height:340px}}
+
+.adv-music{margin:8px 16px 16px;padding:12px;border:1px solid #857456;border-radius:12px;background:#202b3c;display:flex;gap:10px;flex-wrap:wrap;align-items:center}.adv-music>div{flex:1;min-width:120px}.adv-music span{display:block;font:8px var(--mono);letter-spacing:.08em;color:#cdb780}.adv-music b{display:block;font-size:13px;margin:4px 0}.adv-music small{font-size:9px;display:block;color:#bcc7cf}.adv-music label{display:flex;align-items:center;gap:8px;font-size:11px;flex:1}.adv-music input{width:100%;min-width:70px;max-width:180px;accent-color:#e4c887}.adv-music a{font-size:10px;color:#d9c691}#viewAdventure .adv-music button{font-size:11px;min-height:42px;padding:8px 10px}
 </style>
 
 <div class="syncbar">
@@ -1380,11 +1382,23 @@ function advScenery(){
 
 function advBar(name,value,max,kind,atbId){return '<div class="adv-bar-label"><span>'+name+'</span><span'+(atbId?' data-adv-value="'+atbId+'"':'')+'>'+Math.ceil(value)+(name==="ATB"?"%":" / "+max)+'</span></div><div class="adv-bar '+kind+'"><i'+(atbId?' data-adv-fill="'+atbId+'"':'')+' style="width:'+Math.max(0,Math.min(100,value/max*100))+'%"></i></div>';}
 function advParty(s,battle=false){const st=AdventureCore.stats(s);return st.map((a,i)=>'<div class="adv-party-card '+(battle&&adventureActor===i?'selected ':'')+(s.party[i].hp<=0?'fallen':'')+'">'+(!battle?'<div class="adv-portrait">'+advSprite(AdventureCore.members[i].sprite)+'</div>':'')+'<div class="adv-party-info"><div class="adv-name">'+a.name+' <small>'+a.role+(i===0&&s.weapon?' / 光冠のレイピア':'')+'</small></div>'+advBar('HP',s.party[i].hp,a.maxHp,'hp')+advBar('MP',s.party[i].mp,a.maxMp,'mp')+(battle?advBar('ATB',s.battle.atb[i],100,'atb','ally'+i):'')+'</div></div>').join('');}
+
+/* ---------- Adventure music: local original loop, explicit user playback ---------- */
+let adventureAudio=null,adventureAudioError=false,adventureAudioPending=false;
+let adventureVolume=Number(load('routine_adventure_volume_v1',0.3));if(!Number.isFinite(adventureVolume))adventureVolume=.3;adventureVolume=Math.max(0,Math.min(1,adventureVolume));
+function advMusicMarkup(){return '<section class="adv-music" aria-label="Adventure BGM"><div><span>ORIGINAL SOUNDTRACK</span><b>王都へ続く灯</b><small id="advMusicStatus" role="status"></small></div><button data-adv="music" id="advMusicToggle" aria-pressed="false">▶ BGMを再生</button><label>音量 <input id="advMusicVolume" type="range" min="0" max="100" step="1" value="'+Math.round(adventureVolume*100)+'" aria-label="BGM音量"></label><a href="adventure-lanterns-v1.wav" download="王都へ続く灯.wav">曲を保存 ↗</a></section>';}
+function advMusicUpdate(){const btn=document.getElementById('advMusicToggle'),status=document.getElementById('advMusicStatus'),playing=!!adventureAudio&&!adventureAudio.paused;if(btn){btn.textContent=adventureAudioPending?'読み込み中…':playing?'Ⅱ BGMを停止':'▶ BGMを再生';btn.disabled=adventureAudioPending;btn.setAttribute('aria-pressed',String(playing));}if(status)status.textContent=adventureAudioError?'再生できませんでした。もう一度押してください。':playing?'再生中 · ループ':'約50秒 · フルート / ハープ / 弦';}
+function advMusicStop(){if(adventureAudio)adventureAudio.pause();advMusicUpdate();}
+async function advMusicToggle(){if(adventureAudioPending)return;if(adventureAudio&&!adventureAudio.paused){advMusicStop();return;}adventureAudioError=false;if(!adventureAudio){adventureAudio=new Audio('adventure-lanterns-v1.wav');adventureAudio.loop=true;adventureAudio.preload='none';adventureAudio.addEventListener('pause',advMusicUpdate);adventureAudio.addEventListener('play',advMusicUpdate);adventureAudio.addEventListener('error',()=>{adventureAudioError=true;advMusicUpdate();});}if(adventureAudio.error)adventureAudio.load();adventureAudio.volume=adventureVolume;adventureAudioPending=true;advMusicUpdate();try{await adventureAudio.play();if(document.hidden||document.getElementById('viewAdventure').style.display==='none')adventureAudio.pause();}catch(e){adventureAudioError=true;}finally{adventureAudioPending=false;advMusicUpdate();}}
+document.getElementById('adventureRoot').addEventListener('input',e=>{if(e.target.id!=='advMusicVolume')return;adventureVolume=Math.max(0,Math.min(1,Number(e.target.value)/100));if(adventureAudio)adventureAudio.volume=adventureVolume;lset('routine_adventure_volume_v1',adventureVolume);});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)advMusicStop();});window.addEventListener('pagehide',advMusicStop);
+/* ---------- end Adventure music ---------- */
+
 function renderAdventure(){
   const root=document.getElementById("adventureRoot"),s=advState(),lv=AdventureCore.level(s),xp=AdventureCore.xp(s);
-  root.innerHTML='<header class="adv-header"><div><p class="adv-eyebrow">THE SUN KING’S SHADOW / CHAPTER 01</p><h2>太陽王の影</h2><p>第1章：鏡に潜む影 · 1682年</p></div><div class="adv-level">LV <b>'+lv+'</b><small>'+xp+' EXP</small></div></header><div class="adv-xp"><i style="width:'+(lv>=20?100:xp%60/60*100)+'%"></i></div><p class="adv-xp-note">'+(lv>=20?'LEVEL MAX':'次のレベルまで '+(60-xp%60)+' EXP')+' · 今日のRoutine 1件 = 10 EXP</p><div id="adventureBody"></div>';
+  root.innerHTML='<header class="adv-header"><div><p class="adv-eyebrow">THE SUN KING’S SHADOW / CHAPTER 01</p><h2>太陽王の影</h2><p>第1章：鏡に潜む影 · 1682年</p></div><div class="adv-level">LV <b>'+lv+'</b><small>'+xp+' EXP</small></div></header><div class="adv-xp"><i style="width:'+(lv>=20?100:xp%60/60*100)+'%"></i></div><p class="adv-xp-note">'+(lv>=20?'LEVEL MAX':'次のレベルまで '+(60-xp%60)+' EXP')+' · 今日のRoutine 1件 = 10 EXP</p>'+advMusicMarkup()+'<div id="adventureBody"></div>';
   document.getElementById("viewAdventure").classList.toggle("adv-in-battle",!!s.battle);
-  if(s.battle)advRenderBattle();else advRenderMap();
+  if(s.battle)advRenderBattle();else advRenderMap();advMusicUpdate();
 }
 function advRenderMap(){
   const s=advState(),node=AdventureCore.nodes[s.position],complete=!!s.royalVictory,root=document.getElementById("adventureBody"),read=s.storyRead.includes(String(node.id));
@@ -1420,6 +1434,7 @@ function advPause(){if(!adventureRunning)return;adventureRunning=false;advSave(t
 document.getElementById("adventureRoot").addEventListener("click",e=>{
   const button=e.target.closest("button");if(!button||button.disabled)return;const s=advState(),cmd=button.dataset.adv;
   if(button.dataset.advNode!==undefined){AdventureCore.visit(s,Number(button.dataset.advNode));advSave(true);renderAdventure();advMaybeStory(s.position);return;}
+  if(cmd==='music'){advMusicToggle();return;}
   if(cmd==='talk'){advOpenStory(s.position);return;}if(cmd==='ending'){advOpenStory('ending');return;}if(cmd==='history'){advOpenHistory(s.position);return;}if(cmd==='notebook'){advOpenHistory();return;}
   if(cmd==='link-hold'){if(adventureRunning&&AdventureCore.linkWait(s)){advSave(false);advRenderBattle();}return;}
   if(button.dataset.advLink){if(adventureRunning&&AdventureCore.linkAction(s,button.dataset.advLink)){if(s.battle.status!=='active')adventureRunning=false;advSave(!adventureRunning);renderAdventure();}return;}
@@ -1751,7 +1766,7 @@ const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElement
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
   if(!visibleTabs().includes(which))which=visibleTabs()[0];
-  if(which!=="adventure")advPause();
+  if(which!=="adventure"){advPause();advMusicStop();}
   document.getElementById("viewAdventure").style.display=which==="adventure"?"block":"none";
   document.getElementById("tabAdventure").classList.toggle("on",which==="adventure");
   if(which==="adventure"){renderAdventure();advMaybeStory(0);}
@@ -3600,7 +3615,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.22"; // 共通JSONインポート・クエスト表示設定
+const APP_VERSION="OS v7.23"; // 共通JSONインポート・クエスト表示設定
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

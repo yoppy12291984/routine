@@ -242,6 +242,7 @@
   html[data-theme="light"] .vw-training{background:#f6ede0}
   html[data-theme="light"] .vw-cal{background:#e9eef6}
 #viewCheck,#viewToday,#viewWorkout,#viewCal,#viewNotes,#viewInvest,#viewPacking,#viewLife{min-height:calc(100vh - 125px);min-height:calc(100dvh - 125px)}
+#routineQuest[hidden]{display:none}
 /* Routine Quest: 日々の全達成をサイコロとレベルへ変える */
 .rq-card{margin:18px 0 22px;padding:16px;border:1px solid #735f37;border-radius:16px;background:linear-gradient(145deg,#171c23,#252b33);box-shadow:0 10px 26px #0003;color:#edf2ee;overflow:hidden}
 .rq-head{display:grid;grid-template-columns:88px minmax(0,1fr) auto;align-items:center;gap:12px;margin-bottom:12px}.rq-hero{width:88px;height:104px;object-fit:contain;filter:drop-shadow(0 5px 5px #0008)}
@@ -259,6 +260,7 @@
   <span class="syncdot" id="syncdot"></span>
   <span id="syncmsg">未接続</span>
   <span class="ver" id="verBar" style="margin-left:auto"></span>
+  <button class="btn-ghost" id="planImport" aria-label="JSONをインポート" title="JSONをインポート" style="margin-left:10px;padding:4px 8px">⇩</button>
   <span class="cfg" id="themeToggle" style="margin-left:14px;margin-right:14px;text-decoration:none;font-size:17px">◐</span>
   <span class="cfg" id="settingsBtn" style="text-decoration:none;font-size:19px">⚙</span>
 </div>
@@ -316,7 +318,7 @@
   <button id="resetAll" style="border-color:#d4795f;color:#d4795f">初期項目に戻す</button>
 </div>
 
-<section class="rq-card" id="routineQuest" aria-label="Routine Quest">
+<section class="rq-card" id="routineQuest" hidden aria-label="Routine Quest">
   <div class="rq-head">
     <img class="rq-hero" src="routine-adventurer-v1.png?v=20261006" alt="冒険者アイコン">
     <div><p class="rq-kicker">ROUTINE QUEST</p><p class="rq-sub" id="rqSub">全達成した日にサイコロを1回</p></div>
@@ -364,7 +366,7 @@
       <button class="btn-ghost" id="planFromCal">カレンダー取込</button>
       <button class="btn-ghost" id="planFromRoutine">ルーチン取込</button>
       <button class="btn-ghost" id="planFromDefault">曜日デフォルト</button>
-      <button class="btn-ghost" id="planImport">AI取込</button>
+
       <button class="btn-primary" id="planAdd">＋ 予定</button>
     </div>
     <div id="planList"></div>
@@ -724,6 +726,7 @@
 <dialog id="settingsDlg">
   <div class="dlg-h">設定 <span id="verLabel" style="font-size:11px;color:var(--ink-faint);font-family:var(--mono);font-weight:400"></span></div>
   <div class="dlg-b">
+    <div class="field"><label><input type="checkbox" id="questVisible"> キャラクターとサイコロを表示する</label></div>
     <div class="field"><label>テーマ</label>
       <div class="wd-pick" id="themePick">
         <span data-th="dark">ダーク</span><span data-th="light">ライト</span>
@@ -801,18 +804,14 @@
 </dialog>
 
 <dialog id="importDlg">
-  <div class="dlg-h">AIから取り込み</div>
+  <div class="dlg-h">JSONをインポート</div>
   <div class="dlg-b">
-    <p class="hint">Claudeに今日の予定を話して出力されたコード（JSON）を、下に貼り付けてください。取り込み先の日付：<b id="importDate"></b></p>
-    <textarea id="importText" rows="8" placeholder='{"todo":[...],"plan":[...]} を貼り付け'
-      style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);padding:10px 11px;border-radius:8px;font-size:13px;font-family:var(--mono);resize:vertical"></textarea>
-    <p class="hint" id="importStatus"></p>
+    <p class="hint">ChatGPTなどが作ったJSONを貼り付けてください。Today・Routine・Calendar・Notes・食事に対応。日付省略時は <b id="importDate"></b> に取り込みます。</p>
+    <details><summary>AIへの依頼文・JSONの形式</summary><textarea id="importGuide" readonly rows="10" style="width:100%"></textarea><p class="hint">依頼文をコピーして、予定や食べたものと一緒にAIへ送ってください。Calendarはこのアプリ内の予定です。</p></details>
+    <textarea id="importText" rows="10" aria-label="取り込むJSON" placeholder="JSONを貼り付け" style="width:100%;background:var(--bg);color:var(--ink);font-family:var(--mono)"></textarea>
+    <p class="hint" id="importStatus" role="status" style="white-space:pre-wrap"></p>
   </div>
-  <div class="dlg-f">
-    <button class="btn-ghost" onclick="importDlg.close()">キャンセル</button>
-    <button class="btn-ghost" id="importAppend">追加で取込</button>
-    <button class="btn-primary" id="importReplace">上書き取込</button>
-  </div>
+  <div class="dlg-f"><button class="btn-ghost" onclick="importDlg.close()">キャンセル</button><button class="btn-ghost" id="importPreview">内容を確認</button><button class="btn-primary" id="importAppend">追加で取り込む</button></div>
 </dialog>
 
 <dialog id="pickDlg">
@@ -1203,6 +1202,9 @@ function freqLabel(it){
 }
 
 /* ---------- Routine Quest ---------- */
+let questVisible=load("routine_quest_visible_v1",false)===true;
+document.getElementById("questVisible").checked=questVisible;
+document.getElementById("questVisible").onchange=e=>{questVisible=e.target.checked;lset("routine_quest_visible_v1",questVisible);render();};
 const RQ_KEY="__routineQuest",RQ_MAX_LEVEL=99,RQ_BOARD_SIZE=30;
 function rqLevel(count){return Math.min(RQ_MAX_LEVEL,Math.floor(Math.max(0,count)/10)+1);}
 function rqDice(date,index){
@@ -1241,6 +1243,7 @@ function rqJourney(){
   return{dates,steps,total:steps.reduce((a,b,i)=>a+(q.rolled[dates[i]]===true?b:0),0)};
 }
 function rqShowLevel(level){
+  if(!questVisible)return;
   document.getElementById("rqCelebration")?.remove();
   const el=document.createElement("div");el.id="rqCelebration";el.className="rq-celebrate";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");el.setAttribute("aria-label","レベルアップ");
   el.innerHTML=`<section class="rq-celebrate-card"><h2>LEVEL UP!</h2><img src="routine-adventurer-v1.png?v=20261006" alt="冒険者アイコン"><p>ルーチンの力で<br><b>LV ${level}</b> になりました！</p><button type="button">冒険を続ける</button></section>`;
@@ -1260,6 +1263,8 @@ function rqRoll(button,date,value){
   },70);
 }
 function rqRender(selectedKey){
+  document.getElementById("routineQuest").hidden=!questVisible;
+  if(!questVisible)return;
   rqEnsureAward(selectedKey);
   const q=rqState(),trip=rqJourney(),count=trip.dates.length,level=rqLevel(count),progress=level>=RQ_MAX_LEVEL?10:count%10;
   document.getElementById("rqLevel").textContent=level;document.getElementById("rqMeter").style.width=(progress*10)+"%";
@@ -1274,7 +1279,7 @@ function rqRender(selectedKey){
 }
 window.RoutineQuestCore={levelFor:rqLevel,diceFor:rqDice,maxLevel:RQ_MAX_LEVEL};
 function render(){
-  rqMigrateLegacy();
+  if(questVisible)rqMigrateLegacy();
   const key=iso(cur);
   document.getElementById("dnum").textContent=cur.getDate();
   document.getElementById("dym").textContent=cur.getFullYear()+"."+String(cur.getMonth()+1).padStart(2,"0");
@@ -1538,7 +1543,7 @@ function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")
 function eventsByDay(){
   // calItems（カレンダー予定）を日付ごとにまとめる
   const map={};
-  (calItems||[]).forEach(ev=>{(map[ev.once]=map[ev.once]||[]).push(ev);});
+  (calItems||[]).concat(items.filter(it=>it.group==="cal"&&it.freq==="once")).forEach(ev=>{(map[ev.once]=map[ev.once]||[]).push(ev);});
   Object.values(map).forEach(list=>list.sort((a,b)=>(a.note||"").localeCompare(b.note||"")));
   return map;
 }
@@ -2007,14 +2012,15 @@ document.getElementById("planFromRoutine").onclick=()=>{
 /* カレンダー取込：その日のカレンダー予定を予定表に入れる（消せる） */
 document.getElementById("planFromCal").onclick=()=>{
   const key=iso(tCur);const d=tData(key);
-  const evs=(calItems||[]).filter(ev=>ev.once===key);
+  const evs=eventsByDay()[key]||[];
   if(!evs.length){alert("この日のカレンダー予定はありません。");return;}
   let added=0;
   evs.forEach(ev=>{
     const exists=d.plan.some(p=>p.calId===ev.id);
     if(exists)return;
-    const start=(ev.note&&/^\d\d:\d\d$/.test(ev.note))?ev.note:"";
-    d.plan.push({id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label:ev.label,cat:"other",start,end:"",fromCal:true,calId:ev.id});
+    const times=(ev.note||"").split("–");
+    const start=/^\d\d:\d\d$/.test(times[0])?times[0]:"",end=/^\d\d:\d\d$/.test(times[1]||"")?times[1]:"";
+    d.plan.push({id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),label:ev.label,cat:"other",start,end,fromCal:true,calId:ev.id});
     added++;
   });
   tSave();tRender();
@@ -2039,45 +2045,62 @@ document.getElementById("planFromDefault").onclick=()=>{
 
 /* AI取込：Claudeが出力したJSONを貼り付けて取り込む */
 const importDlg=document.getElementById("importDlg");
+const IMPORT_GUIDE=`私の話をRoutine OS用JSONに整理してください。必要な項目だけ出力し、不明な予定や習慣は勝手に追加しないでください。日付はYYYY-MM-DD、時刻はHH:mm。毎日の習慣はroutines、単発予定はcalendar、今日の作業はtoday.todo、メモはnotesへ。食事は量も含めてmealsへ、kcalはAIが推定した数値（不明ならnull）、basisに量・推定の根拠を書いてください。これは概算です。以下は形式の例です。例の内容自体は取り込まないでください。
+{"date":"2026-10-27","today":{"todo":[{"text":"買い物","done":false}],"plan":[{"label":"昼食","start":"12:00","end":"12:30","cat":"meal"}],"reflection":"振り返り"},"routines":[{"label":"散歩","freq":"everyday"},{"label":"掃除","freq":"weekly","days":[0,6]}],"calendar":[{"date":"2026-10-28","label":"打ち合わせ","start":"10:00","end":"11:00"}],"notes":[{"title":"メモ","body":"内容"}],"meals":[{"name":"昼食","foods":"ご飯150g、焼き魚1切れ","kcal":500,"basis":"一般的な1人前で推定"}]}
+曜日は0=日曜〜6=土曜。routines.freqはeverydayまたはweekly。notesとmealsはdateで個別の日付も指定可能。既存データは追加方式で保持されます。`;
 document.getElementById("planImport").onclick=()=>{
-  document.getElementById("importDate").textContent=iso(tCur);
+  document.getElementById("importDate").textContent=iso(cur);
+  document.getElementById("importGuide").value=IMPORT_GUIDE;
   document.getElementById("importText").value="";
   document.getElementById("importStatus").textContent="";
   importDlg.showModal();
 };
+function normalizeImport(raw,defaultDate){
+  const obj=JSON.parse(raw.trim().replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"").trim());
+  const record=(v,label)=>{if(!v||typeof v!=="object"||Array.isArray(v))throw Error(label+"はオブジェクトで指定してください。");return v;};
+  const str=(v,label,optional=false)=>{if(optional&&v===undefined)return "";if(typeof v!=="string"||(!optional&&!v.trim()))throw Error(label+"を文字列で指定してください。");return v.trim();};
+  const date=v=>{if(typeof v!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(v)||!Number.isFinite(new Date(v+"T00:00:00").getTime())||iso(new Date(v+"T00:00:00"))!==v)throw Error("日付をYYYY-MM-DDで指定してください。");return v;};
+  const time=v=>{if(v===undefined||v==="")return "";if(typeof v!=="string"||!/^([01]?\d|2[0-3]):[0-5]\d$/.test(v))throw Error("時刻をHH:mmで指定してください。");return v.padStart(5,"0");};
+  const arr=(v,label)=>{if(v===undefined)return [];if(!Array.isArray(v))throw Error(label+"は配列で指定してください。");return v;};
+  record(obj,"JSON");
+  const keys=["date","today","todo","plan","reflection","routines","calendar","notes","meals"];
+  if(Object.keys(obj).some(k=>!keys.includes(k)))throw Error("未対応の項目があります。依頼文のJSON形式を確認してください。");
+  const key=date(obj.date===undefined?defaultDate:obj.date),t=obj.today===undefined?obj:record(obj.today,"today");
+  if(obj.today!==undefined&&Object.keys(t).some(k=>!["todo","plan","reflection"].includes(k)))throw Error("today内に未対応の項目があります。");
+  const out={date:key,todo:arr(t.todo,"todo").map(v=>{if(typeof v==="string")v={text:v};record(v,"todo");if(v.done!==undefined&&typeof v.done!=="boolean")throw Error("doneはtrue/falseです。");return {text:str(v.text??v.label,"todo.text"),done:v.done===true};}),plan:arr(t.plan,"plan").map(v=>{record(v,"plan");return {label:str(v.label??v.name,"plan.label"),start:time(v.start),end:time(v.end),cat:T_CATS.some(c=>c.id===v.cat)?v.cat:"other"};}),reflection:str(t.reflection,"reflection",true),routines:[],calendar:[],notes:[],meals:[]};
+  out.routines=arr(obj.routines,"routines").map(v=>{record(v,"routines");const freq=v.freq||"everyday";if(!["everyday","weekly"].includes(freq))throw Error("習慣のfreqはeveryday/weeklyです。");if(freq==="weekly"&&(!Array.isArray(v.days)||!v.days.length||v.days.some(n=>!Number.isInteger(n)||n<0||n>6)))throw Error("曜日は0〜6の配列で指定してください。");return {label:str(v.label,"routines.label"),group:GROUPS.some(g=>g.id===v.group)?v.group:GROUPS[0].id,freq,...(freq==="weekly"?{days:[...new Set(v.days)].sort()}: {})};});
+  out.calendar=arr(obj.calendar,"calendar").map(v=>{record(v,"calendar");const start=time(v.start),end=time(v.end);return {label:str(v.label,"calendar.label"),group:"cal",freq:"once",once:date(v.date),note:[start,end].filter(Boolean).join("–")};});
+  out.notes=arr(obj.notes,"notes").map(v=>{record(v,"notes");return {title:str(v.title,"notes.title"),body:str(v.body,"notes.body"),date:date(v.date??key),cat:""};});
+  out.meals=arr(obj.meals,"meals").map(v=>{record(v,"meals");if(v.kcal!==undefined&&v.kcal!==null&&(typeof v.kcal!=="number"||!Number.isFinite(v.kcal)||v.kcal<0))throw Error("kcalは0以上の数値かnullです。");return {date:date(v.date??key),name:str(v.name,"meals.name"),foods:str(v.foods,"meals.foods"),kcal:v.kcal??null,basis:str(v.basis,"meals.basis",true)};});
+  if(!out.todo.length&&!out.plan.length&&!out.reflection&&!out.routines.length&&!out.calendar.length&&!out.notes.length&&!out.meals.length)throw Error("取り込む項目がありません。");
+  return out;
+}
 function parseImport(){
-  let raw=document.getElementById("importText").value.trim();
-  if(!raw){document.getElementById("importStatus").textContent="貼り付けが空です。";return null;}
-  // ```json ... ``` のコードフェンスを除去
-  raw=raw.replace(/^```(json)?/i,"").replace(/```$/,"").trim();
-  let obj;
-  try{obj=JSON.parse(raw);}catch(e){document.getElementById("importStatus").textContent="JSONの形式が正しくありません。Claudeの出力をそのまま貼り付けてください。";return null;}
-  const validCats=T_CATS.map(c=>c.id);
-  const todo=Array.isArray(obj.todo)?obj.todo.map(t=>{
-    if(typeof t==="string")return{text:t,done:false};
-    return{text:String(t.text||t.label||""),done:!!t.done};
-  }).filter(t=>t.text):[];
-  const plan=Array.isArray(obj.plan)?obj.plan.map(p=>({
-    id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
-    label:String(p.label||p.name||""),
-    start:/^\d\d?:\d\d$/.test(p.start||"")?p.start.padStart(5,"0"):"",
-    end:/^\d\d?:\d\d$/.test(p.end||"")?p.end.padStart(5,"0"):"",
-    cat:validCats.includes(p.cat)?p.cat:"other",
-  })).filter(p=>p.label):[];
-  return {todo,plan,reflection:typeof obj.reflection==="string"?obj.reflection:""};
+  try{return normalizeImport(document.getElementById("importText").value,document.getElementById("importDate").textContent);}catch(e){document.getElementById("importStatus").textContent="取り込みできません："+e.message;return null;}
 }
-function applyImport(mode){
-  const parsed=parseImport();if(!parsed)return;
-  const d=tData(iso(tCur));
-  if(mode==="replace"){d.todo=parsed.todo;d.plan=parsed.plan;if(parsed.reflection)d.reflection=parsed.reflection;}
-  else{d.todo=d.todo.concat(parsed.todo);d.plan=d.plan.concat(parsed.plan);}
-  tSave();importDlg.close();tRender();
-  alert(`取り込みました（やりたいこと ${parsed.todo.length}件 / 予定 ${parsed.plan.length}件）。`);
+function importSummary(p){
+  return [`日付：${p.date}`,`Today：作業${p.todo.length}件・予定${p.plan.length}件${p.reflection?"・振り返りあり":""}`, ...p.todo.map(x=>"  □ "+x.text),...p.plan.map(x=>"  "+x.start+" "+x.label),...p.routines.map(x=>"Routine："+x.label+"（"+(x.freq==="weekly"?x.days.map(n=>WD[n]).join("・"):"毎日")+"）"),...p.calendar.map(x=>"Calendar："+x.once+" "+x.note+" "+x.label),...p.notes.map(x=>"Notes："+x.date+" "+x.title+"\n"+x.body),...p.meals.map(x=>"食事："+x.date+" "+x.name+" / "+x.foods+" / "+(x.kcal===null?"カロリー不明":x.kcal+" kcal（AI概算）")+"\n"+x.basis),p.reflection].filter(Boolean).join("\n");
 }
-document.getElementById("importAppend").onclick=()=>applyImport("append");
-document.getElementById("importReplace").onclick=()=>{
-  if(confirm("この日のやりたいこと・予定表を、貼り付けた内容で上書きします。よろしいですか？"))applyImport("replace");
-};
+document.getElementById("importPreview").onclick=()=>{const p=parseImport();if(p)document.getElementById("importStatus").textContent=importSummary(p);};
+function applyImport(){
+  const p=parseImport();if(!p)return;
+  document.getElementById("importStatus").textContent=importSummary(p);
+  if(!confirm(importSummary(p)+"\n\n既存データを残して追加しますか？ 同じ内容は重複追加しません。"))return;
+  const id=()=>"imp"+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+  const add=(target,list,fields)=>{list.forEach(v=>{if(!target.some(x=>fields.every(k=>JSON.stringify(x[k]??"")===JSON.stringify(v[k]??""))))target.push({id:id(),...v});});};
+  if(p.todo.length||p.plan.length||p.reflection){const d=tData(p.date);add(d.todo,p.todo,["text"]);add(d.plan,p.plan,["label","start","end","cat"]);if(p.reflection&&!d.reflection.split("\n\n").includes(p.reflection))d.reflection=[d.reflection,p.reflection].filter(Boolean).join("\n\n");}
+  add(items,p.routines,["label","group","freq","days"]);add(items,p.calendar,["label","once","note","group"]);
+  add(notes,p.notes,["title","body","date"]);
+  // 食事は既存Notes形式で保存し、GASの保存項目を増やさない。
+  [...new Set(p.meals.map(m=>m.date))].forEach(date=>{
+    const meals=p.meals.filter(m=>m.date===date),known=meals.filter(m=>m.kcal!==null);
+    const body=meals.map(m=>`${m.name}：${m.foods}\n${m.kcal===null?"カロリー不明":m.kcal+" kcal（AI概算）"}${m.basis?"\n推定の根拠："+m.basis:""}`).join("\n\n")+`\n\n今回の取り込み合計：${known.reduce((sum,m)=>sum+m.kcal,0)} kcal（AI概算）${known.length<meals.length?"／カロリー不明の食事を除く":""}`;
+    add(notes,[{title:"食事記録 "+date,body,date,cat:"meal"}],["title","body","date"]);
+  });
+  lset(K_ITEMS,items);lset(K_NOTES,notes);lset(K_TODAY,today);pushSoon();
+  render();renderCal();renderNotes();tRender();importDlg.close();alert("取り込みました。食事と概算カロリーはNotesの「食事記録」で確認できます。");
+}
+document.getElementById("importAppend").onclick=applyImport;
 
 /* charts */
 function drawCharts(d){
@@ -3209,7 +3232,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.16"; // サイコロ確定後にマップを進める
+const APP_VERSION="OS v7.17"; // 共通JSONインポート・クエスト表示設定
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

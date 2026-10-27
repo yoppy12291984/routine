@@ -1,0 +1,9 @@
+RoutineOS original soundtrack: Beyond the Light / 光の彼方へ
+Original composition and arrangement for RoutineOS.
+Instrument recordings: VS Chamber Orchestra 2 Community Edition,
+Versilian Studios / Sam Gossner and contributors.
+Source: https://github.com/sgossner/VSCO-2-CE
+Pinned revision: 440300901dfe9275fd84e0b7763af1f8443ae62e
+Sample license: CC0 1.0 Universal (public domain dedication).
+https://creativecommons.org/publicdomain/zero/1.0/
+Only instrument recordings are reused; the composition is original.

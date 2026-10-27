@@ -241,7 +241,7 @@
   .vw-cal{background:#0f1a2e}
   html[data-theme="light"] .vw-training{background:#f6ede0}
   html[data-theme="light"] .vw-cal{background:#e9eef6}
-#viewCheck,#viewToday,#viewWorkout,#viewCal,#viewNotes,#viewInvest,#viewPacking,#viewLife,#viewNutrition{min-height:calc(100vh - 125px);min-height:calc(100dvh - 125px)}
+#viewCheck,#viewToday,#viewWorkout,#viewCal,#viewNotes,#viewInvest,#viewPacking,#viewLife,#viewNutrition,#viewAdventure{min-height:calc(100vh - 125px);min-height:calc(100dvh - 125px)}
 #routineQuest[hidden]{display:none}
 /* Routine Quest: 日々の全達成をサイコロとレベルへ変える */
 .rq-card{margin:18px 0 22px;padding:16px;border:1px solid #735f37;border-radius:16px;background:linear-gradient(145deg,#171c23,#252b33);box-shadow:0 10px 26px #0003;color:#edf2ee;overflow:hidden}
@@ -255,6 +255,26 @@
 @media(max-width:600px){.rq-board{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:5px}}@media(max-width:430px){.rq-head{grid-template-columns:76px minmax(0,1fr) auto;gap:8px}.rq-hero{width:76px;height:96px}.rq-space{border-radius:3px}.rq-title{font-size:17px}}@media(prefers-reduced-motion:reduce){.rq-celebrate-card{animation:none}}
 .rq-space.current .rq-event{display:none}
 .nutrition-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.nutrition-grid .nutrition-day{min-height:76px;padding:8px 3px;border:1px solid var(--line);border-radius:10px;background:var(--surface,var(--bg));color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:5px}.nutrition-day strong{font-size:13px}.nutrition-day small{font-size:10px;color:var(--ink-muted)}.nutrition-day.selected{border-color:var(--accent,#5fb3a3);box-shadow:inset 0 0 0 1px var(--accent,#5fb3a3)}.nutrition-weekday{text-align:center;font-size:12px;padding:6px}.nutrition-entry{border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}.nutrition-entry p{white-space:pre-wrap;overflow-wrap:anywhere}.nutrition-entry button{margin-right:8px}@media(max-width:400px){.nutrition-grid{gap:3px}.nutrition-grid .nutrition-day{min-height:68px}.nutrition-day strong{font-size:11px}}
+/* Adventure — original woodland RPG */
+.adv-story p.adv-story-update{color:#e1ca91;min-height:0;font-size:10px;margin-top:8px}
+@media(max-width:599px){#viewAdventure.adv-in-battle .adv-header{padding:10px 14px 6px}.adv-in-battle .adv-header h2{font-size:20px}.adv-in-battle .adv-header .adv-eyebrow{font-size:7px;margin-bottom:4px}.adv-in-battle .adv-header p:not(.adv-eyebrow){display:none}.adv-in-battle .adv-level b{font-size:24px}.adv-in-battle .adv-level small{font-size:8px}.adv-in-battle .adv-xp-note{margin:4px 16px 8px;font-size:8px}.adv-in-battle .adv-battle-toolbar{margin-bottom:7px}.adv-in-battle .adv-arena{height:160px}.adv-in-battle .adv-enemy{height:85px;width:70px;bottom:22px}.adv-in-battle .adv-enemy.boss{height:116px;width:100px;bottom:18px}.adv-in-battle .adv-actor{height:64px;width:53px}.adv-in-battle .adv-allies{bottom:10px}.adv-in-battle .adv-moon{width:28px;height:28px;top:13px}.adv-in-battle .adv-enemy-bars{padding:7px 4px 9px}.adv-in-battle .adv-party{margin-bottom:8px}.adv-in-battle .adv-party-card{padding:8px}.adv-in-battle .adv-name{margin-bottom:3px}.adv-in-battle .adv-bar-label{margin-top:4px}.adv-in-battle .adv-command{padding:9px}.adv-in-battle .adv-command-status{margin:7px 0}.adv-in-battle .adv-skills button{min-height:44px!important;padding:7px 9px!important}.adv-in-battle .adv-log{margin-top:9px;padding:7px 10px}}
+
+.adv-boss-hint{font-size:10px;color:#dfbfa0;line-height:1.7;margin:6px 0}
+#viewAdventure{min-height:calc(100dvh - 125px)}
+.adventure-launch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0;padding:15px;border:1px solid #385e59;border-radius:15px;background:linear-gradient(120deg,#193630,#172a38);color:#eceddb}.adventure-launch small{display:block;color:#c2b680;font:10px var(--mono);letter-spacing:.12em;margin-bottom:5px}.adventure-launch p{font-size:11px;color:#a9c9bc;margin:5px 0}.adventure-launch button{flex-shrink:0}
+#viewAdventure{--adv-gold:#efd293;--adv-muted:#a5bdb7;--adv-line:#365654;--adv-text:#eff3e7;color:var(--adv-text);background:#10242b;border:1px solid #304b4b;border-radius:20px;overflow:hidden;margin-top:8px;box-shadow:0 16px 40px #0002}
+#viewAdventure button{font:inherit;font-size:12px;min-height:42px;border:1px solid #53736a;color:#eaf2e5;border-radius:9px;background:#233d3f;padding:9px 12px;cursor:pointer;touch-action:manipulation}#viewAdventure button:disabled{opacity:.42;cursor:default}#viewAdventure button:focus-visible{outline:3px solid #f4d78d;outline-offset:3px}#viewAdventure button.adv-primary{background:#ead29a;color:#243631;border-color:#f4dfad;font-weight:700}
+.adv-header{display:flex;justify-content:space-between;gap:14px;padding:22px 20px 12px;background:radial-gradient(ellipse at top right,#3a5143,transparent 70%)}.adv-eyebrow{font:9px var(--mono);letter-spacing:.14em;color:#c3b17e;margin-bottom:8px}.adv-header h2{font-size:30px;letter-spacing:.08em;color:#f2e6c5}.adv-header p:not(.adv-eyebrow){font-size:11px;color:#a9c3b6;margin-top:7px}.adv-level{text-align:right;white-space:nowrap;font:11px var(--mono);color:#d6c48e}.adv-level b{display:inline-block;font-size:36px}.adv-level small{display:block;color:#b2c7ba;font-size:10px;margin-top:3px}.adv-xp{height:4px;background:#29403f;margin:0 20px;border-radius:5px;overflow:hidden}.adv-xp i{display:block;height:100%;background:linear-gradient(90deg,#81c8ad,#f2d28b)}.adv-xp-note{text-align:right;font:9px var(--mono);color:#abc1b7;margin:7px 20px 15px}
+#adventureBody{padding:0 16px 18px}.adv-party{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.adv-party-card{display:flex;gap:7px;padding:11px 10px;background:#1b3338;border:1px solid #36534e;border-radius:12px;min-width:0}.adv-party-card.selected{border-color:#d8c28a}.adv-portrait{width:45px;flex-shrink:0;display:grid;place-items:center}.adv-party-info{min-width:0;flex:1}.adv-name{font-weight:700;font-size:13px;margin-bottom:7px}.adv-name small{display:block;font:9px var(--sans);color:#9bb7ac;margin-top:3px}.adv-bar-label{display:flex;justify-content:space-between;font:9px var(--mono);color:#b2c7bd;margin:6px 0 3px}.adv-bar{height:5px;border-radius:4px;background:#0e2027;overflow:hidden}.adv-bar i{height:100%;display:block;transition:width .1s linear;background:#8cc7a3}.adv-bar.mp i{background:#90b6da}.adv-bar.atb i{background:#ead191}.adv-bar.enemy i{background:#c291ad}.adv-bar.enemy-atb i{background:#a690b7}.adv-sprite{display:block;width:100%;height:100%;filter:drop-shadow(0 5px 5px #0003)}
+.adv-map{height:340px;border:1px solid #527063;border-radius:14px;position:relative;overflow:hidden;background:#1c3b3e;box-shadow:inset 0 0 30px #051e2a}.adv-landscape{width:100%;height:100%;position:absolute;inset:0}#viewAdventure .adv-node{position:absolute;transform:translate(-50%,-50%);background:#192f35;border:2px solid #91ad8d;border-radius:50%;width:38px;height:38px;min-height:38px;padding:0;box-shadow:0 0 0 5px #12313970;color:#f0da9d;overflow:visible;font-size:19px;z-index:1}#viewAdventure .adv-node.current{border-color:#ffe4a6;background:#82683c;box-shadow:0 0 0 5px #e8c36e25,0 0 25px #d5b66b60}.adv-node small{position:absolute;top:40px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;color:#eef0da;background:#143039cc;padding:3px 6px;border-radius:4px;pointer-events:none}#viewAdventure .adv-node:disabled{opacity:.45;background:#172d32;color:#70958d}.adv-node.cleared:after{content:'✓';position:absolute;right:-6px;top:-6px;font-size:11px;background:#a8c79b;color:#173332;border-radius:50%;width:16px;height:16px;line-height:16px}
+.adv-story{padding:18px 3px 10px}.adv-story h3{font-size:20px;color:#f0dfb7;margin-bottom:10px}.adv-story p{font-size:12px;line-height:1.9;color:#b6c9bf;min-height:45px}.adv-map-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.adv-help{border-top:1px solid #36514b;margin-top:12px;padding-top:13px;color:#9eb7ac;font-size:11px}.adv-help summary{cursor:pointer}.adv-help p{line-height:1.9;margin-top:10px}
+.adv-battle-toolbar{display:flex;align-items:center;gap:7px;margin-bottom:10px}.adv-battle-toolbar>span{font:9px var(--mono);letter-spacing:.1em;color:#d9c38d;margin-right:auto}#viewAdventure .adv-battle-toolbar button{font-size:10px;padding:5px 8px;min-height:35px}.adv-arena{height:230px;position:relative;border:1px solid #596872;border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 95%,#52644e,transparent 55%),linear-gradient(#172937 0%,#2c4550 58%,#243d3e 58%,#263c35 100%)}.adv-arena:before{content:'';position:absolute;inset:0;background:linear-gradient(85deg,transparent 12%,#1b343a 12%,#1b343a 15%,transparent 15%,transparent 85%,#1b343a 85%,#1b343a 90%,transparent 90%);clip-path:polygon(0 0,100% 0,100% 90%,0 80%)}.adv-moon{position:absolute;left:42%;top:20px;width:40px;height:40px;background:#e4d9a6;border-radius:50%;box-shadow:0 0 45px #e5e0a942;opacity:.65}.adv-enemy{position:absolute;left:12%;bottom:38px;width:90px;height:108px}.adv-enemy.boss{width:125px;height:152px;left:7%;bottom:27px}.adv-enemy>span{position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;background:#162b34ba;border-radius:4px;padding:3px 7px;color:#d7d9bd}.adv-allies{position:absolute;right:12%;bottom:28px;display:flex;flex-direction:column;align-items:flex-end;gap:0}.adv-actor{height:80px;width:68px;position:relative}.adv-actor:first-child{margin-right:28px}.adv-actor.ready{filter:drop-shadow(0 0 7px #d9d09280)}.fallen{opacity:.45;filter:grayscale(1)}.adv-arena-label{position:absolute;left:12px;top:11px;font-size:9px;letter-spacing:.1em;color:#c5d0c1}.adv-damage{position:absolute;top:6px;left:40%;font:bold 23px var(--mono);color:#fff4be;text-shadow:0 2px 4px #15212c;animation:adv-float .65s ease-out both;pointer-events:none}.effect-fire .adv-enemy .adv-sprite{animation:adv-fire .5s}.effect-ice .adv-enemy .adv-sprite{animation:adv-ice .5s}.effect-hit .adv-enemy .adv-sprite{animation:adv-hit .35s}.effect-enemy .adv-allies{animation:adv-hit .35s}.effect-heal .adv-allies{animation:adv-heal .5s}
+.adv-enemy-bars{padding:9px 5px 13px}.adv-enemy-name{display:flex;justify-content:space-between;font-size:12px}.adv-enemy-name small{color:#b9b0c2;font-size:10px}.adv-command{background:#172e36;border:1px solid #456158;border-radius:12px;padding:11px;margin-top:3px}.adv-character-select{display:flex;gap:7px}#viewAdventure .adv-character-select button{flex:1;font-size:11px;min-height:35px;padding:7px}.adv-character-select button.selected{border-color:#e0c993!important;color:#f0dfaf!important}.adv-command-status{font-size:10px;color:#bbcebf;margin:10px 1px;min-height:16px}.adv-skills{display:grid;grid-template-columns:1fr 1fr;gap:7px}#viewAdventure .adv-skills button{text-align:left;min-height:52px;background:#28453f;font-weight:600;font-size:12px;border-color:#57786a}.adv-skills small{display:block;font-size:9px;font-weight:400;color:#bbd1bc;margin-top:5px}#viewAdventure .adv-retreat{background:transparent;border:0;color:#a8bcb1;min-height:34px;padding:8px 0 0;font-size:10px}.adv-log{margin-top:12px;padding:11px 13px;border-left:2px solid #4e6e61;background:#0d2229;border-radius:0 8px 8px 0;min-height:75px}.adv-log p{font-size:10px;line-height:1.8;color:#a6c0b4}.adv-log p:last-child{color:#eddfa9}.adv-result,.adv-clear{text-align:center;border:1px solid #9e8b59;background:radial-gradient(ellipse at top,#42513c,#1a3034);padding:20px 14px;border-radius:14px;margin:15px 0}.adv-result h3,.adv-clear h3{color:#f1dca8;font-size:22px;margin:7px 0 12px}.adv-result p,.adv-clear p{font-size:12px;line-height:1.9;color:#c5d6bf}.adv-result button{margin-top:15px}.adv-clear small{font:10px var(--mono);letter-spacing:.2em;color:#efcf85}.adv-clear span{display:block;font-size:10px;color:#c3b584;margin-top:12px}
+@keyframes adv-float{0%{opacity:0;transform:translateY(12px)}20%{opacity:1}100%{opacity:0;transform:translateY(-30px)}}@keyframes adv-fire{40%{filter:drop-shadow(0 0 16px #ff873a) brightness(1.4)}}@keyframes adv-ice{40%{filter:drop-shadow(0 0 16px #78d9ee) brightness(1.4)}}@keyframes adv-heal{50%{filter:drop-shadow(0 0 10px #b9efa5)}}@keyframes adv-hit{25%{transform:translateX(-5px)}75%{transform:translateX(4px)}}
+@media(min-width:600px){.adv-map{height:410px}.adv-arena{height:280px}.adv-enemy{width:110px;height:140px}.adv-enemy.boss{width:160px;height:190px}.adv-actor{width:84px;height:100px}.adv-party-card{padding:14px}.adv-portrait{width:60px}.adv-header h2{font-size:36px}}
+@media(max-width:380px){.adv-header{padding:18px 13px 10px}.adv-eyebrow{font-size:8px}.adv-party{gap:6px}.adv-party-card{padding:9px 6px}.adv-portrait{width:33px}.adv-name small{font-size:8px}#adventureBody{padding:0 10px 14px}.adv-map{height:320px}.adv-allies{right:7%}.adv-node small{font-size:8px}}
+@media(prefers-reduced-motion:reduce){#viewAdventure *{animation:none!important;transition:none!important}}
+
 </style>
 
 <div class="syncbar">
@@ -271,6 +291,7 @@
   <button class="tab" id="tabToday">Today</button>
   <button class="tab" id="tabWorkout" style="display:none">Training</button>
   <button class="tab" id="tabCal">Calendar</button>
+  <button class="tab" id="tabAdventure">Adventure</button>
   <button class="tab" id="tabNutrition">Nutrition</button>
   <button class="tab" id="tabNotes">Notes</button>
   <button class="tab" id="tabInvest">Investment</button>
@@ -320,6 +341,7 @@
   <button id="resetAll" style="border-color:#d4795f;color:#d4795f">初期項目に戻す</button>
 </div>
 
+<section class="adventure-launch"><div><small>ROUTINE CHRONICLES</small><strong>灯りの森</strong><p id="adventureRoutineLevel"></p><p id="adventureRoutineMessage">今日のルーチン1件で、2人に10 EXP。</p></div><button id="adventureOpen" class="btn-primary">冒険へ →</button></section>
 <section class="rq-card" id="routineQuest" hidden aria-label="Routine Quest">
   <div class="rq-head">
     <img class="rq-hero" src="routine-adventurer-v1.png?v=20261006" alt="冒険者アイコン">
@@ -547,6 +569,7 @@
   </div>
 </div>
 
+<div id="viewAdventure" style="display:none"><div id="adventureRoot"></div></div>
 <div id="viewNutrition" style="display:none">
   <div class="top"><div><h2 style="margin:0">Nutrition</h2><p class="hint">食べたものと、日ごとの摂取カロリー</p></div></div>
   <div class="controls" style="margin-bottom:16px"><button class="btn-ghost" id="nutritionPrev" aria-label="前の月">‹</button><b id="nutritionMonth"></b><button class="btn-ghost" id="nutritionNext" aria-label="次の月">›</button><button class="btn-ghost" id="nutritionNow">今月</button></div>
@@ -754,6 +777,7 @@
     <div class="field"><label>タブ（Today）</label><input id="tn_today" placeholder="Today"></div>
     <div class="field"><label>タブ2（トレーニング）</label><input id="tn_workout" placeholder="Training"></div>
     <div class="field"><label>タブ3（カレンダー）</label><input id="tn_cal" placeholder="Calendar"></div>
+    <div class="field"><label>タブ（Adventure）</label><input id="tn_adventure" placeholder="Adventure"></div>
     <div class="field"><label>タブ（Nutrition）</label><input id="tn_nutrition" placeholder="Nutrition"></div>
     <div class="field"><label>タブ4（メモ）</label><input id="tn_notes" placeholder="Notes"></div>
     <div class="field"><label>タブ（Investment）</label><input id="tn_invest" placeholder="Investment"></div>
@@ -1062,7 +1086,7 @@ function setSync(state,msg){
   document.getElementById("syncmsg").textContent=msg;
 }
 // ローカル操作の直後はサーバー取得で上書きしない（2回押し問題の防止）
-function localBusy(){return pendingPush||pushing||(Date.now()-lastLocalEdit<2000);}
+function localBusy(){return adventureRunning||pendingPush||pushing||(Date.now()-lastLocalEdit<2000);}
 async function pull(){
   if(!gasUrl){setSync("","ローカル保存のみ（同期設定でPC↔スマホ連動）");return;}
   if(localBusy())return;                 // 未送信のローカル変更があれば取得しない
@@ -1073,6 +1097,9 @@ async function pull(){
     if(localBusy())return;               // 取得中に操作が入ったら結果は破棄
     if(j&&j.ok&&j.state){
       const s=j.state;
+      const localAdventure=checks[ADV_KEY],remoteAdventure=s.checks?.[ADV_KEY],preferLocal=load(ADV_DIRTY,false);
+      const mergedAdventure=AdventureCore.merge(preferLocal?localAdventure:remoteAdventure,preferLocal?remoteAdventure:localAdventure);
+      const adventureNeedsSync=!!mergedAdventure&&JSON.stringify(mergedAdventure)!==JSON.stringify(remoteAdventure);
       if(Array.isArray(s.items)&&s.items.length){items=s.items;lset(K_ITEMS,items);}
       if(s.checks){
         // マージ：未送信のローカル変更を消さないよう、日付単位で手元を優先
@@ -1081,6 +1108,7 @@ async function pull(){
           Object.keys(checks||{}).forEach(dk=>{merged[dk]=checks[dk];});
           checks=merged;
         }else{checks=s.checks;}
+        if(mergedAdventure)checks[ADV_KEY]=mergedAdventure;
         lset(K_CHECKS,checks);
       }
       if(s.duties){duties=s.duties;lset(K_DUTY,duties);}
@@ -1104,9 +1132,11 @@ async function pull(){
         if(s.wk.duties){wDuties=s.wk.duties;lset(WK_DUTY,wDuties);}
         if(Array.isArray(s.wk.groups)&&s.wk.groups.length){wGROUPS=s.wk.groups;lset(WK_GROUPS,wGROUPS);}
       }
+      if(mergedAdventure){checks[ADV_KEY]=mergedAdventure;if(adventureNeedsSync)advSave(true);}
       calItems=Array.isArray(s.calItems)?s.calItems:[];   // カレンダー予定（保存しない）
       setSync("ok","同期済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));
       render();
+      if(document.getElementById("viewAdventure").style.display!=="none")renderAdventure();
       if(viewCal.style.display!=="none")renderCal();
       if(viewWorkout.style.display!=="none")wRender();
       migrateNutrition();
@@ -1135,6 +1165,7 @@ async function push(){
   setSync("busy","保存中…");
   try{
     const payload=JSON.stringify({items,checks,duties,groups:GROUPS,memos,notes,today,tcats:T_CATS,reminders,daydef:dayDefaults,inv:invItems,invchk:invChecks,invev:invEvents,invtoday:invToday,packing:packing,packtmpl:packTemplates,lifehack:lifehack,wk:{items:wItems,checks:wChecks,duties:wDuties,groups:wGROUPS}});
+    const adventureSnapshot=JSON.stringify(checks[ADV_KEY]||null);
     lastPushBytes=payload.length;
     const wantStamp=stateStamp();
     const sep=gasUrl.indexOf("?")<0?"?":"&";
@@ -1156,7 +1187,7 @@ async function push(){
         }
       }catch(e3){lastPushErr="VERIFY:"+((e3&&e3.message)||e3);}
     }
-    if(saved){pendingPush=false;lastPushErr="";setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));}
+    if(saved){if(JSON.stringify(checks[ADV_KEY]||null)===adventureSnapshot)lset(ADV_DIRTY,false);pendingPush=false;lastPushErr="";setSync("ok","保存済み "+new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"}));}
     else{setSync("err","保存失敗（後で再送）");}
   }catch(e){lastPushErr=(e&&e.message)?e.message:String(e);setSync("err","保存失敗（後で再送）");}
   finally{pushing=false;}
@@ -1221,6 +1252,137 @@ function freqLabel(it){
   if(it.freq==="once"){const o=(it.once||"").split("-");return o.length===3?`${+o[1]}/${+o[2]}`:"単発";}
   return"";
 }
+
+/* Adventure core: pure state transitions, no DOM or network. */
+const AdventureCore=(()=>{
+  const nodes=[
+    {id:0,name:"旅人の焚き火",kind:"camp",x:15,y:81,text:"剣士アオと、灯術師リナ。消えた森の灯りを取り戻す旅が始まる。焚き火ではいつでも全回復できる。"},
+    {id:1,name:"こもれびの小道",kind:"battle",enemy:"moss",xp:25,x:36,y:70,text:"小道をふさぐ苔の精。リナのファイアがよく効きそうだ。"},
+    {id:2,name:"古い見張り台",kind:"chest",xp:15,x:25,y:46,text:"旅人が残した宝箱。『灯の剣』を手に入れた！ アオの攻撃力が5上がった。"},
+    {id:3,name:"星映しの泉",kind:"spring",x:57,y:54,text:"星を映す泉が、二人のHPとMPを満たす。ここから先は古い遺跡だ。"},
+    {id:4,name:"遺跡への石橋",kind:"battle",enemy:"wolf",xp:30,x:72,y:34,text:"霧の獣が石橋に立ちはだかる。HPが減ったらリナのヒールで立て直そう。"},
+    {id:5,name:"消えた灯の聖堂",kind:"boss",enemy:"warden",xp:80,x:49,y:16,text:"森の灯りを閉じ込めた『夜の番人』。力を合わせて灯りを解き放とう。"}
+  ];
+  const enemies={moss:{name:"苔の精",hp:86,attack:10,speed:23,weak:"fire"},wolf:{name:"霧の獣",hp:148,attack:14,speed:27,weak:"ice"},warden:{name:"夜の番人",hp:420,attack:22,speed:28,weak:"ice"}};
+  const skills={attack:{name:"たたかう",cost:0,level:1,who:[0,1]},ember:{name:"火花斬り",cost:4,level:2,who:[0],element:"fire"},fire:{name:"ファイア",cost:4,level:1,who:[1],element:"fire"},heal:{name:"ヒール",cost:6,level:1,who:[1]},ice:{name:"フロスト",cost:7,level:3,who:[1],element:"ice"},guard:{name:"まもる・MP回復",cost:0,level:1,who:[0,1]}};
+  function fresh(){const s={version:1,awards:{},rewards:[],cleared:[0],position:0,weapon:false,battle:null,wait:true,message:"灯りを取り戻す、小さな冒険。まずはこもれびの小道へ。"};s.party=stats(s).map(a=>({hp:a.maxHp,mp:a.maxMp}));return s;}
+  function xp(s){return Object.values(s.awards||{}).reduce((n,a)=>n+(Array.isArray(a)?a.length:0)*10,0)+(s.rewards||[]).reduce((n,id)=>n+(nodes[id]?.xp||0),0);}
+  function level(s){return Math.min(20,1+Math.floor(xp(s)/60));}
+  function stats(s){const lv=level(s);return [{name:"アオ",role:"剣士",maxHp:100+lv*14,maxMp:16+lv*4,attack:17+lv*3+(s.weapon?5:0),speed:33},{name:"リナ",role:"灯術師",maxHp:78+lv*12,maxMp:28+lv*4,attack:10+lv*2,speed:29}];}
+  function recover(s){s.party=stats(s).map(a=>({hp:a.maxHp,mp:a.maxMp}));}
+  function growth(s,before){const now=stats(s);s.party.forEach((p,i)=>{p.hp=Math.min(now[i].maxHp,p.hp+now[i].maxHp-before[i].maxHp);p.mp=Math.min(now[i].maxMp,p.mp+now[i].maxMp-before[i].maxMp);});}
+  function award(s,date,id){const list=s.awards[date]||(s.awards[date]=[]);if(list.includes(id))return false;const before=stats(s),old=level(s);list.push(id);growth(s,before);s.message="ルーチン達成！ 2人に10 EXP。"+(level(s)>old?" LEVEL UP！ LV "+level(s)+"（HP・MPがアップ）"+(old<2&&level(s)>=2?" アオが火花斬りを習得！":"")+(old<3&&level(s)>=3?" リナがフロストを習得！":""):"");return true;}
+  function unlocked(s,id){return id===0||s.cleared.includes(id)||s.cleared.includes(id-1);}
+  function reward(s,id){if(s.rewards.includes(id))return false;const before=stats(s);s.rewards.push(id);growth(s,before);return true;}
+  function visit(s,id){const node=nodes[id];if(!node||!unlocked(s,id)||s.battle)return false;s.position=id;
+    if(node.kind==="camp"||node.kind==="spring"){recover(s);if(!s.cleared.includes(id))s.cleared.push(id);s.message=node.text+" HP・MPが全回復した。";}
+    else if(node.kind==="chest"){const first=!s.cleared.includes(id);s.weapon=true;if(first)s.cleared.push(id);reward(s,id);s.message=first?node.text:"宝箱は開いている。灯の剣はアオが装備中。";}
+    else s.message=node.text;return true;
+  }
+  function start(s){const node=nodes[s.position];if(s.battle||!node?.enemy||!unlocked(s,node.id))return false;if(s.party.every(p=>p.hp<=0))recover(s);const enemy=enemies[node.enemy];s.battle={node:node.id,hp:enemy.hp,maxHp:enemy.hp,enemyAtb:0,atb:[30,15],guard:[false,false],turn:0,status:"active",logs:[enemy.name+"が現れた！"],effect:null};return true;}
+  function log(b,msg){b.logs.push(msg);b.logs=b.logs.slice(-5);}
+  function finish(s){const b=s.battle;if(!b||b.status!=="active")return;
+    if(b.hp<=0){b.hp=0;b.status="won";const before=level(s),first=reward(s,b.node);if(!s.cleared.includes(b.node))s.cleared.push(b.node);s.message=b.node===5?"森に灯りが戻った。アオとリナの最初の冒険、クリア！":"道が開けた。次の場所へ進もう。";log(b,first?"勝利！ "+nodes[b.node].xp+" EXPを獲得。":"勝利！ 再戦のためEXPは獲得済み。");if(level(s)>before){log(b,"LEVEL UP！ LV "+level(s)+"。HP・MPが上がった！");if(before<2&&level(s)>=2)log(b,"アオが火花斬りを習得！");if(before<3&&level(s)>=3)log(b,"リナがフロストを習得！");}}
+    else if(s.party.every(p=>p.hp<=0)){b.status="lost";s.message="二人は焚き火へ戻ることにした。経験値や装備は失わない。";log(b,"戦闘不能… 焚き火で休んで、もう一度挑もう。");}
+  }
+  function ready(s,i){return !!s.battle&&s.battle.status==="active"&&s.party[i]?.hp>0&&s.battle.atb[i]>=100;}
+  function usable(s,i,key){const sk=skills[key];return !!sk&&sk.who.includes(i)&&level(s)>=sk.level&&ready(s,i)&&s.party[i].mp>=sk.cost;}
+  function action(s,i,key,target){if(!usable(s,i,key))return false;const b=s.battle,sk=skills[key],ally=s.party[i],st=stats(s),enemy=enemies[nodes[b.node].enemy],lv=level(s);
+    if(key==="heal"&&(!Number.isInteger(target)||target<0||target>1))return false;
+    ally.mp-=sk.cost;b.atb[i]=0;b.guard[i]=false;
+    if(key==="guard"){b.guard[i]=true;ally.mp=Math.min(st[i].maxMp,ally.mp+5);log(b,st[i].name+"は身を守り、MPを5回復。");b.effect={kind:"heal",target:i,text:"MP +5"};}
+    else if(key==="heal"){const p=s.party[target],gain=Math.min(st[target].maxHp-p.hp,42+lv*8);p.hp+=gain;log(b,"ヒール！ "+st[target].name+"のHPが"+gain+"回復。");b.effect={kind:"heal",target,text:"+"+gain};}
+    else{let damage=key==="attack"?st[i].attack:key==="ember"?28+lv*5:key==="fire"?32+lv*5:46+lv*6;const weak=sk.element&&enemy.weak===sk.element;if(weak)damage=Math.round(damage*1.35);b.hp=Math.max(0,b.hp-damage);log(b,st[i].name+"の"+sk.name+"！ "+damage+"ダメージ"+(weak?"・弱点！":"。"));b.effect={kind:sk.element||"hit",target:"enemy",text:String(damage)};}
+    finish(s);return true;
+  }
+  function tick(s,seconds){const b=s.battle;if(!b||b.status!=="active")return false;if(s.wait&&b.atb.some((v,i)=>v>=100&&s.party[i].hp>0))return false;
+    const dt=Math.max(0,Math.min(.25,Number(seconds)||0)),st=stats(s),enemy=enemies[nodes[b.node].enemy];
+    b.atb=b.atb.map((v,i)=>s.party[i].hp>0?Math.min(100,v+st[i].speed*dt):0);b.enemyAtb=Math.min(100,b.enemyAtb+(enemy.speed+(b.node===5&&b.hp<b.maxHp/2?6:0))*dt);
+    if(b.enemyAtb>=100&&!(s.wait&&b.atb.some((v,i)=>v>=100&&s.party[i].hp>0))){b.enemyAtb=0;b.turn++;const all=b.node===5&&b.turn%3===0,alive=s.party.map((p,i)=>p.hp>0?i:-1).filter(i=>i>=0),targets=all?alive:[alive[(b.turn-1)%alive.length]];const dmg=[];
+      targets.forEach(i=>{const damage=Math.max(1,Math.round((all?enemy.attack*.72:enemy.attack)*(b.guard[i] ? .45 : 1)));s.party[i].hp=Math.max(0,s.party[i].hp-damage);b.guard[i]=false;if(!s.party[i].hp)b.atb[i]=0;dmg.push(st[i].name+"に"+damage);});
+      log(b,enemy.name+"の"+(all?"夜の息吹":"攻撃")+"！ "+dmg.join("・")+"ダメージ。");b.effect={kind:"enemy",target:all?"all":targets[0],text:"被弾"};finish(s);return true;
+    }return false;
+  }
+  function leave(s){if(!s.battle)return false;const lost=s.battle.status==="lost",retreat=s.battle.status==="active";s.battle=null;if(lost||retreat){s.position=0;recover(s);s.message=retreat?"焚き火に帰還。HP・MPが回復した。経験値は失わない。":s.message;}return true;}
+  function merge(base,other){
+    if(!base&&!other)return null;const state=JSON.parse(JSON.stringify(base||other));if(!other||!base)return state;
+    const before=stats(state),awards={};[...new Set([...Object.keys(base.awards||{}),...Object.keys(other.awards||{})])].sort().forEach(day=>{awards[day]=[...new Set([...(base.awards[day]||[]),...(other.awards[day]||[])])].sort();});state.awards=awards;
+    state.rewards=[...new Set([...base.rewards,...other.rewards])].sort((a,b)=>a-b);state.cleared=[...new Set([...base.cleared,...other.cleared])].sort((a,b)=>a-b);state.weapon=base.weapon||other.weapon;growth(state,before);return state;
+  }
+  return {nodes,enemies,skills,fresh,xp,level,stats,recover,award,unlocked,visit,start,ready,usable,action,tick,leave,merge};
+})();
+if(typeof module!=="undefined"&&module.exports)module.exports=AdventureCore;
+
+/* ---------- Adventure UI / existing checks sync bridge ---------- */
+const ADV_KEY="__routineAdventureV1",ADV_DIRTY="routine_adventure_dirty_v1";
+let adventureBooted=false,adventureRunning=false,adventureActor=0,adventureLast=performance.now(),adventureCheckpoint=0,adventureReady="";
+function advState(){if(!checks[ADV_KEY])checks[ADV_KEY]=AdventureCore.fresh();return checks[ADV_KEY];}
+function advSave(sync=false){lset(K_CHECKS,checks);lset(ADV_DIRTY,true);if(sync&&adventureBooted)pushSoon();}
+function advAwardRoutines(){
+  const key=iso(new Date()),dc=checks[key]||{},s=advState();let gained=0;
+  items.filter(it=>!it.cal&&it.group!=="cal"&&dueToday(it,new Date())&&dc[it.id]).forEach(it=>{if(AdventureCore.award(s,key,it.id))gained++;});
+  if(gained){advSave(true);document.getElementById("adventureRoutineMessage").textContent="＋"+(gained*10)+" EXP · "+s.message;}
+  document.getElementById("adventureRoutineLevel").textContent="LV "+AdventureCore.level(s)+" · "+AdventureCore.xp(s)+" EXP";
+}
+function advSprite(kind){
+  const shapes={
+    hero:'<path fill="#26394b" d="M20 47h25v25H20z"/><path fill="#83bfc4" d="M18 29h30v27H18z"/><path fill="#e0b478" d="M22 12h22v22H22z"/><path fill="#233642" d="M18 10h29v10H18zm0 7h7v14h-7z"/><path fill="#e4c077" d="M24 7h16v5H24z"/><path fill="#18232e" d="M27 23h3v3h-3zm12 0h3v3h-3z"/><path fill="#cf784e" d="M19 31h28v7H19zM12 36h8v24h-8z"/><path fill="#f1d69a" d="M46 43h15v4H46z"/><path fill="#b6e4e5" d="M51 13h5v30h-5z"/><path fill="#6d8278" d="M50 47h7v10h-7z"/><path fill="#152935" d="M17 69h13v7H17zm22 0h12v7H39z"/>',
+    mage:'<path fill="#56475d" d="M20 40h24l8 31H12z"/><path fill="#b4a1ce" d="M22 31h21l8 28H13z"/><path fill="#e0b478" d="M22 14h21v21H22z"/><path fill="#d1dee2" d="M18 12h27v8H18zm0 4h6v22h-6zm23 0h7v25h-7z"/><path fill="#253040" d="M27 25h3v3h-3zm11 0h3v3h-3z"/><path fill="#f4d891" d="M27 36h10v6H27z"/><path fill="#b5926d" d="M52 20h4v54h-4z"/><path fill="#92e1d6" d="m54 5 8 10-8 10-8-10z"/><path fill="#152935" d="M18 69h12v7H18zm17 0h12v7H35z"/>',
+    moss:'<path fill="#264d44" d="M8 37h6V25h12v-7h19v8h10v12h6v24h-8v8H13v-8H6z"/><path fill="#67a97a" d="M13 37h11V27h20v10h10v25H13z"/><path fill="#accb85" d="M20 20V8h9v13zm16 4V5h10v22z"/><path fill="#f2dc93" d="M23 43h5v6h-5zm16 0h5v6h-5z"/><path fill="#183b37" d="M28 56h12v4H28z"/>',
+    wolf:'<path fill="#586c8b" d="m9 63 5-31L9 13l19 12h15l14-12-3 27 8 23-15 9H22z"/><path fill="#8da6bc" d="m18 34 14 8 15-8 5 25-17 13-18-13z"/><path fill="#f1c77b" d="M21 40h7v5h-7zm20 0h7v5h-7z"/><path fill="#26384f" d="m28 52 14 0-7 9z"/><path fill="#d6e5df" d="M25 59h5v7h-5zm16 0h5v7h-5z"/>',
+    warden:'<path fill="#393c58" d="m4 65 4-32 13-7-5-22 15 15h11L58 4l-6 22 10 7 1 32-13 10H16z"/><path fill="#697088" d="M20 24h28v23H20zm-6 25h41v23H14z"/><path fill="#242b43" d="M25 30h18v12H25z"/><path fill="#dba3df" d="M25 33h5v4h-5zm13 0h5v4h-5z"/><path fill="#a98bd1" d="m34 47 12 13-12 13-12-13z"/><path fill="#ecdaff" d="m34 53 6 7-6 7-6-7z"/>'
+  };
+  return '<svg viewBox="0 0 68 82" aria-hidden="true" class="adv-sprite" shape-rendering="crispEdges"><ellipse cx="34" cy="77" rx="25" ry="4" fill="#06171b" opacity=".45"/>'+shapes[kind]+'</svg>';
+}
+function advScenery(){let trees="";[[6,35,1.1],[88,42,1],[15,20,.8],[84,13,.8],[4,67,.8],[92,76,1.1],[42,39,.6],[48,80,.8],[65,12,.65]].forEach(([x,y,z])=>{trees+='<g transform="translate('+x+' '+y+') scale('+z+')"><path d="M-1 0h2v11h-2" fill="#5c7466"/><path d="M0-14-8 4H8zM0-7-10 10h20z" fill="#204e49" stroke="#396b5a" stroke-width=".5"/></g>';});return '<svg viewBox="0 0 100 100" preserveAspectRatio="none" class="adv-landscape" aria-hidden="true"><rect width="100" height="100" fill="#132e35"/><path d="M0 33 19 10 43 24 69 0 100 29v71H0" fill="#1d3d43"/><path d="M0 70 32 47 69 68 100 48v52H0" fill="#254741"/><path d="M57 100Q72 69 56 54T58 0" fill="none" stroke="#508e92" stroke-width="4" opacity=".55"/><path d="M15 81 36 70 25 46 57 54 72 34 49 16" fill="none" stroke="#bfaa75" stroke-width="1.1" stroke-dasharray="2 2" opacity=".55"/>'+trees+'<path d="M39 16h20v8H39zm3-13h4v18h-4zm10 0h4v18h-4z" fill="#718981"/><path d="M37 3h23l-12-5z" fill="#9aa893"/></svg>';}
+function advBar(name,value,max,kind,atbId){return '<div class="adv-bar-label"><span>'+name+'</span><span'+(atbId?' data-adv-value="'+atbId+'"':'')+'>'+Math.ceil(value)+(name==="ATB"?"%":" / "+max)+'</span></div><div class="adv-bar '+kind+'"><i'+(atbId?' data-adv-fill="'+atbId+'"':'')+' style="width:'+Math.max(0,Math.min(100,value/max*100))+'%"></i></div>';}
+function advParty(s,battle=false){const st=AdventureCore.stats(s);return st.map((a,i)=>'<div class="adv-party-card '+(battle&&adventureActor===i?'selected ':'')+(s.party[i].hp<=0?'fallen':'')+'">'+(!battle?'<div class="adv-portrait">'+advSprite(i?'mage':'hero')+'</div>':'')+'<div class="adv-party-info"><div class="adv-name">'+a.name+' <small>'+a.role+(i===0&&s.weapon?' / 灯の剣':'')+'</small></div>'+advBar('HP',s.party[i].hp,a.maxHp,'hp')+advBar('MP',s.party[i].mp,a.maxMp,'mp')+(battle?advBar('ATB',s.battle.atb[i],100,'atb','ally'+i):'')+'</div></div>').join('');}
+function renderAdventure(){
+  const root=document.getElementById("adventureRoot"),s=advState(),lv=AdventureCore.level(s),xp=AdventureCore.xp(s);
+  root.innerHTML='<header class="adv-header"><div><p class="adv-eyebrow">ROUTINE CHRONICLES / CHAPTER 01</p><h2>灯りの森</h2><p>小さな達成が、二人の力になる。</p></div><div class="adv-level">LV <b>'+lv+'</b><small>'+xp+' EXP</small></div></header><div class="adv-xp"><i style="width:'+(lv>=20?100:xp%60/60*100)+'%"></i></div><p class="adv-xp-note">'+(lv>=20?'LEVEL MAX':'次のレベルまで '+(60-xp%60)+' EXP')+' · 今日のRoutine 1件 = 10 EXP</p><div id="adventureBody"></div>';
+  document.getElementById("viewAdventure").classList.toggle("adv-in-battle",!!s.battle);
+  if(s.battle)advRenderBattle();else advRenderMap();
+}
+function advRenderMap(){
+  const s=advState(),node=AdventureCore.nodes[s.position],complete=s.cleared.includes(5),root=document.getElementById("adventureBody");
+  root.innerHTML='<div class="adv-party">'+advParty(s)+'</div>'+(complete?'<div class="adv-clear"><small>CHAPTER CLEAR</small><h3>森に、灯りが戻った。</h3><p>「また明日も、一緒に進もう。」<br>アオとリナの冒険は、毎日の小さな達成とともに。</p><span>夜の番人撃破 · 灯の剣を獲得</span></div>':'')+'<div class="adv-map">'+advScenery()+AdventureCore.nodes.map(n=>{const open=AdventureCore.unlocked(s,n.id),done=s.cleared.includes(n.id);return '<button class="adv-node '+(n.id===s.position?'current ':'')+(done?'cleared':'')+'" data-adv-node="'+n.id+'" style="left:'+n.x+'%;top:'+n.y+'%" '+(!open?'disabled':'')+' aria-label="'+n.name+(done?'（踏破済み）':!open?'（未開放）':'')+'"><span>'+(n.kind==='boss'?'♜':n.kind==='chest'?'◆':n.kind==='spring'?'✧':n.kind==='camp'?'⌂':'⚔')+'</span><small>'+n.name+'</small></button>';}).join('')+'</div><section class="adv-story"><div class="adv-eyebrow">'+(node.kind==='boss'?'BOSS / ':'DESTINATION / ')+String(node.id+1).padStart(2,'0')+'</div><h3>'+node.name+'</h3><p>'+esc(node.text)+'</p><p class="adv-story-update">'+esc(s.message.startsWith(node.text)?s.message.slice(node.text.length):s.message)+'</p><div class="adv-map-actions">'+(node.enemy?'<button class="adv-primary" data-adv="battle">'+(s.cleared.includes(node.id)?'もう一度戦う（EXP獲得済み）':'戦闘をはじめる')+'</button>':'')+(s.cleared.includes(node.id)&&node.id<5?'<button class="adv-primary" data-adv="next">次の場所へ →</button>':'')+(node.id!==0?'<button data-adv="camp">焚き火で全回復</button>':'<button data-adv="rest">ここで全回復</button>')+'</div></section><details class="adv-help"><summary>遊び方・習得する技</summary><p>マップの光っている場所をタップして進みます。ウェイトATBは味方のゲージが満タンになると時間が止まり、落ち着いて選べます。アクティブへ切り替えると選択中も敵が動きます。</p><p>アオ：たたかう / LV2 火花斬り<br>リナ：ファイア / ヒール（戦闘不能からも回復） / LV3 フロスト<br>まもる：次の被ダメージを軽減しMPを5回復。</p><p>今日のルーチン1項目につき10 EXP。チェックの付け直しで重複獲得しません。休んでもレベルは下がりません。戦闘は再開時に一時停止、逃走・敗北によるEXPの減少はありません。</p></details>';
+}
+function advRenderBattle(){
+  const s=advState(),b=s.battle;if(!b)return;const node=AdventureCore.nodes[b.node],enemy=AdventureCore.enemies[node.enemy],st=AdventureCore.stats(s),root=document.getElementById("adventureBody");
+  if(!AdventureCore.ready(s,adventureActor)){const ready=[0,1].find(i=>AdventureCore.ready(s,i));if(ready!==undefined)adventureActor=ready;}
+  const ready=AdventureCore.ready(s,adventureActor),effect=b.effect,done=b.status!=="active";
+  root.innerHTML='<div class="adv-battle-toolbar"><span>'+ (node.kind==='boss'?'BOSS ENCOUNTER':'ENCOUNTER')+'</span><button data-adv="pause" '+(done?'disabled':'')+'>'+(adventureRunning?'一時停止':'再開')+'</button><button data-adv="mode" '+(done?'disabled':'')+'>'+ (s.wait?'ウェイトATB':'アクティブATB')+'</button></div><div class="adv-arena '+(effect?'effect-'+effect.kind:'')+'"><div class="adv-moon"></div><div class="adv-enemy '+(node.kind==='boss'?'boss':'')+'">'+advSprite(node.enemy)+'<span>'+enemy.name+'</span>'+(effect?.target==='enemy'?'<b class="adv-damage">'+effect.text+'</b>':'')+'</div><div class="adv-allies">'+[0,1].map(i=>'<div class="adv-actor '+(s.party[i].hp<=0?'fallen':'')+(AdventureCore.ready(s,i)?' ready':'')+'">'+advSprite(i?'mage':'hero')+(effect?.target===i||effect?.target==='all'?'<b class="adv-damage">'+effect.text+'</b>':'')+'</div>').join('')+'</div><div class="adv-arena-label">'+node.name+'</div></div><div class="adv-enemy-bars"><div class="adv-enemy-name">'+enemy.name+' <small>弱点：'+(enemy.weak==='fire'?'炎':'氷')+'</small></div>'+(b.node===5?'<p class="adv-boss-hint">'+(b.turn%3===2?'次は全体攻撃「夜の息吹」 · まもるで軽減':b.hp<b.maxHp/2?'番人が加速！ HPに気を配ろう':'3回目の行動は全体攻撃 · 守りと回復を使おう')+'</p>':'')+advBar('HP',b.hp,b.maxHp,'enemy')+advBar('ATB',b.enemyAtb,100,'atb enemy-atb','enemy')+'</div><div class="adv-party">'+advParty(s,true)+'</div>'+(done?'<section class="adv-result"><p class="adv-eyebrow">'+(b.status==='won'?'VICTORY':'TRY AGAIN')+'</p><h3>'+(b.status==='won'?(b.node===5?'森の灯りを取り戻した！':'道が開けた！'):'焚き火で立て直そう')+'</h3><p>'+esc(s.message)+'</p><button class="adv-primary" data-adv="finish">'+(b.status==='won'?'マップへ戻る':'全回復して焚き火へ')+'</button></section>':'<section class="adv-command"><div class="adv-character-select">'+[0,1].map(i=>'<button data-adv-actor="'+i+'" class="'+(i===adventureActor?'selected':'')+'">'+st[i].name+' · '+(s.party[i].hp<=0?'戦闘不能':AdventureCore.ready(s,i)?'READY':'チャージ中')+'</button>').join('')+'</div><p id="advBattleStatus" class="adv-command-status">'+(!adventureRunning?'一時停止中。「再開」で続ける。':ready?st[adventureActor].name+'のコマンドを選択': 'ATBゲージがたまるまで待とう')+'</p><div class="adv-skills">'+Object.entries(AdventureCore.skills).filter(([k,v])=>v.who.includes(adventureActor)).map(([key,skill])=>{const learned=AdventureCore.level(s)>=skill.level,disabled=!adventureRunning||!AdventureCore.usable(s,adventureActor,key);return key==='heal'?'<button data-adv-skill="heal" data-target="0" '+(disabled?'disabled':'')+'>ヒール → アオ<small>MP 6 · 回復 / 蘇生</small></button><button data-adv-skill="heal" data-target="1" '+(disabled?'disabled':'')+'>ヒール → リナ<small>MP 6 · 回復 / 蘇生</small></button>':'<button data-adv-skill="'+key+'" '+(disabled?'disabled':'')+'>'+skill.name+'<small>'+(!learned?'LV '+skill.level+'で習得':skill.cost?'MP '+skill.cost:key==='guard'?'被ダメージ軽減 + MP5回復':'MP消費なし')+'</small></button>';}).join('')+'</div><button class="adv-retreat" data-adv="retreat">焚き火へ退却</button></section>')+'<div class="adv-log" role="log" aria-label="戦闘ログ">'+b.logs.map(l=>'<p>'+esc(l)+'</p>').join('')+'</div>';
+  adventureReady=b.atb.map((v,i)=>v>=100&&s.party[i].hp>0?'1':'0').join('');
+}
+function advPause(){if(!adventureRunning)return;adventureRunning=false;advSave(true);if(document.getElementById("viewAdventure").style.display!=="none")renderAdventure();}
+document.getElementById("adventureRoot").addEventListener("click",e=>{
+  const button=e.target.closest("button");if(!button||button.disabled)return;const s=advState(),cmd=button.dataset.adv;
+  if(button.dataset.advNode!==undefined){AdventureCore.visit(s,Number(button.dataset.advNode));advSave(true);renderAdventure();return;}
+  if(button.dataset.advActor!==undefined){adventureActor=Number(button.dataset.advActor);advRenderBattle();return;}
+  if(button.dataset.advSkill){if(!adventureRunning)return;if(AdventureCore.action(s,adventureActor,button.dataset.advSkill,Number(button.dataset.target))){const done=s.battle.status!=="active";if(done)adventureRunning=false;advSave(done);renderAdventure();}return;}
+  if(cmd==="battle"){if(AdventureCore.start(s)){adventureRunning=true;adventureLast=performance.now();advSave(false);}}
+  if(cmd==="pause"){adventureRunning=!adventureRunning;adventureLast=performance.now();advSave(!adventureRunning);}
+  if(cmd==="mode"){s.wait=!s.wait;advSave(!adventureRunning);}
+  if(cmd==="camp"||cmd==="rest")AdventureCore.visit(s,0);
+  if(cmd==="next")AdventureCore.visit(s,Math.min(5,s.position+1));
+  if(cmd==="finish"){AdventureCore.leave(s);adventureRunning=false;}
+  if(cmd==="retreat"){if(!confirm("焚き火へ戻って全回復しますか？ 経験値・装備は失いません。"))return;AdventureCore.leave(s);adventureRunning=false;}
+  if(cmd!=="battle"&&cmd!=="pause"&&cmd!=="mode")advSave(true);renderAdventure();
+});
+document.getElementById("adventureOpen").onclick=()=>showTab("adventure");
+setInterval(()=>{
+  const now=performance.now(),dt=(now-adventureLast)/1000;adventureLast=now;
+  if(!adventureRunning)return;
+  if(document.hidden||document.getElementById("viewAdventure").style.display==="none"||document.querySelector("dialog[open]")){advPause();return;}
+  const s=advState(),b=s.battle;if(!b||b.status!=="active"){adventureRunning=false;return;}
+  const event=AdventureCore.tick(s,dt),ready=b.atb.map((v,i)=>v>=100&&s.party[i].hp>0?'1':'0').join('');
+  if(event||ready!==adventureReady){if(b.status!=="active")adventureRunning=false;advSave(!adventureRunning);renderAdventure();}
+  else{[...b.atb,b.enemyAtb].forEach((v,i)=>{const key=i===2?'enemy':'ally'+i,fill=document.querySelector('[data-adv-fill="'+key+'"]'),value=document.querySelector('[data-adv-value="'+key+'"]');if(fill)fill.style.width=v+'%';if(value)value.textContent=Math.floor(v)+'%';});}
+  if(now-adventureCheckpoint>2000){adventureCheckpoint=now;advSave(false);}
+},100);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)advPause();});
+window.addEventListener("pagehide",()=>{if(checks[ADV_KEY]?.battle){adventureRunning=false;advSave(false);}});
+/* ---------- end Adventure ---------- */
 
 /* ---------- Routine Quest ---------- */
 let questVisible=load("routine_quest_visible_v1",false)===true;
@@ -1344,6 +1506,7 @@ function render(){
   document.getElementById("progtxt").textContent=`${done} / ${total} 完了`;
   document.getElementById("progpct").textContent=pct+"%";
   document.getElementById("streak").textContent="🔥 連続 "+streak()+"日";
+  advAwardRoutines();
   rqRender(key);
 }
 function toggle(key,id){
@@ -1522,6 +1685,10 @@ const viewCheck=document.getElementById("viewCheck"),viewCal=document.getElement
 const tabCheck=document.getElementById("tabCheck"),tabCal=document.getElementById("tabCal");
 function showTab(which){
   if(!visibleTabs().includes(which))which=visibleTabs()[0];
+  if(which!=="adventure")advPause();
+  document.getElementById("viewAdventure").style.display=which==="adventure"?"block":"none";
+  document.getElementById("tabAdventure").classList.toggle("on",which==="adventure");
+  if(which==="adventure")renderAdventure();
   const vw=document.getElementById("viewWorkout"),vn=document.getElementById("viewNotes"),vt=document.getElementById("viewToday"),vi=document.getElementById("viewInvest"),vp=document.getElementById("viewPacking"),vl=document.getElementById("viewLife");
   viewCheck.style.display=which==="check"?"block":"none";
   vw.style.display=which==="workout"?"block":"none";
@@ -1562,6 +1729,7 @@ document.getElementById("tabInvest").onclick=()=>showTab("invest");
 document.getElementById("tabPacking").onclick=()=>showTab("packing");
 document.getElementById("tabLife").onclick=()=>showTab("life");
 document.getElementById("tabToday").onclick=()=>showTab("today");
+document.getElementById("tabAdventure").onclick=()=>showTab("adventure");
 document.getElementById("tabNutrition").onclick=()=>showTab("nutrition");
 
 function ym(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -3109,9 +3277,10 @@ applyTheme(theme);
 function setTheme(t){theme=t;lset("routine_theme_v1",theme);applyTheme(theme);paintThemePick();}
 document.getElementById("themeToggle").onclick=()=>setTheme(theme==="light"?"dark":"light");
 
-const TAB_DEFAULTS={check:"Routine",today:"Today",workout:"Training",cal:"Calendar",notes:"Notes",invest:"Investment",packing:"Packing",life:"Lifehack",nutrition:"Nutrition"};
+const TAB_DEFAULTS={check:"Routine",today:"Today",workout:"Training",cal:"Calendar",notes:"Notes",invest:"Investment",packing:"Packing",life:"Lifehack",nutrition:"Nutrition",adventure:"Adventure"};
 let tabNames=load("routine_tabnames_v1",{});
 function applyTabNames(){
+  document.getElementById("tabAdventure").textContent=tabNames.adventure||TAB_DEFAULTS.adventure;
   document.getElementById("tabNutrition").textContent=tabNames.nutrition||TAB_DEFAULTS.nutrition;
   document.getElementById("tabCheck").textContent=tabNames.check||TAB_DEFAULTS.check;
   document.getElementById("tabToday").textContent=tabNames.today||TAB_DEFAULTS.today;
@@ -3124,8 +3293,8 @@ function applyTabNames(){
 }
 applyTabNames();
 
-const TAB_ORDER_DEFAULT=["check","today","workout","cal","nutrition","notes","invest","packing","life"];
-const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest",packing:"tabPacking",life:"tabLife",nutrition:"tabNutrition"};
+const TAB_ORDER_DEFAULT=["check","today","adventure","workout","cal","nutrition","notes","invest","packing","life"];
+const TAB_BTN_ID={check:"tabCheck",today:"tabToday",workout:"tabWorkout",cal:"tabCal",notes:"tabNotes",invest:"tabInvest",packing:"tabPacking",life:"tabLife",nutrition:"tabNutrition",adventure:"tabAdventure"};
 let tabOrder=load("routine_taborder_v1",null);
 if(!Array.isArray(tabOrder)||!tabOrder.length){tabOrder=TAB_ORDER_DEFAULT.slice();}
 // 新しいタブが増えたら、既存の並び順の末尾に足す（既存の並びは尊重）
@@ -3194,6 +3363,7 @@ document.getElementById("settingsBtn").onclick=()=>{
   document.getElementById("tn_invest").value=tabNames.invest||"";
   document.getElementById("tn_packing").value=tabNames.packing||"";
   document.getElementById("tn_life").value=tabNames.life||"";
+  document.getElementById("tn_adventure").value=tabNames.adventure||"";
   document.getElementById("tn_nutrition").value=tabNames.nutrition||"";
   buildPresetList();
   buildTabOrder();
@@ -3323,6 +3493,7 @@ document.getElementById("settingsSave").onclick=()=>{
     packing:document.getElementById("tn_packing").value.trim(),
     life:document.getElementById("tn_life").value.trim(),
     nutrition:document.getElementById("tn_nutrition").value.trim(),
+    adventure:document.getElementById("tn_adventure").value.trim(),
   };
   Object.keys(tabNames).forEach(k=>{if(!tabNames[k])delete tabNames[k];});
   lset("routine_tabnames_v1",tabNames);applyTabNames();settingsDlg.close();
@@ -3363,12 +3534,13 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.19"; // 共通JSONインポート・クエスト表示設定
+const APP_VERSION="OS v7.20"; // 共通JSONインポート・クエスト表示設定
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();
 applyTabVisibility();
 showTab(startupTab);
+adventureBooted=true;
 pull();
 // 未送信が残っていれば定期的に再送を試みる（保存漏れでチェックが消えるのを防ぐ）
 setInterval(()=>{if(pendingPush&&!pushing&&gasUrl)push();},20000);

@@ -1380,7 +1380,7 @@ function advAwardRoutines(){
 function advSprite(kind){
   // Normalize opaque head-to-boot bounds, not the transparent PNG canvas size.
   const frames={hero:{"src":"adventure-rock-style-v3.png","w":1024,"h":1536,"x":255,"y":61,"bw":665,"bh":1406},chisa:{"src":"adventure-ceria-style-v2.png","w":1024,"h":1536,"x":148,"y":59,"bw":656,"bh":1437},mage:{src:'adventure-rihoko-v2.png',w:1024,h:1536,x:246,y:111,bw:605,bh:1370}};
-  const frame=frames[kind];if(frame)return '<span class="adv-figure"><img class="adv-sprite adv-normalized" data-body-height="'+frame.bh+'" data-body-top="'+frame.y+'" style="height:'+frame.h/frame.bh*100+'%;top:'+(-frame.y/frame.bh*100)+'%;transform:translateX('+(-(frame.x+frame.bw/2)/frame.w*100)+'%)" src="'+frame.src+'" alt="" draggable="false"></span>';
+  const frame=frames[kind],heightScale=kind==='hero'?1.08:1;if(frame)return '<span class="adv-figure"><img class="adv-sprite adv-normalized" data-body-height="'+frame.bh+'" data-body-top="'+frame.y+'" style="height:'+frame.h/frame.bh*heightScale*100+'%;top:'+((1-heightScale-frame.y/frame.bh*heightScale)*100)+'%;transform:translateX('+(-(frame.x+frame.bw/2)/frame.w*100)+'%)" src="'+frame.src+'" alt="" draggable="false"></span>';
 
   const assets={hero:"adventure-rock-style-v3.png",mage:"adventure-rihoko-v2.png",chisa:"adventure-ceria-style-v2.png",moss:"adventure-mirror-sentinel-v1.png",wolf:"adventure-mirror-hound-v1.png",warden:"adventure-mirror-boss-v1.png"};if(assets[kind])return '<img class="adv-sprite adv-family-sprite adv-sprite-'+kind+'" src="'+assets[kind]+'" alt="" draggable="false">';
   const shapes={
@@ -3646,7 +3646,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.34"; // 共通JSONインポート・クエスト表示設定
+const APP_VERSION="OS v7.35"; // 共通JSONインポート・クエスト表示設定
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

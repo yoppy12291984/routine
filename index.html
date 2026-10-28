@@ -1379,10 +1379,10 @@ function advAwardRoutines(){
 }
 function advSprite(kind){
   // Normalize opaque head-to-boot bounds, not the transparent PNG canvas size.
-  const frames={hero:{"src":"adventure-rock-style-v2.png","w":1024,"h":1536,"x":208,"y":67,"bw":770,"bh":1387},chisa:{"src":"adventure-ceria-style-v2.png","w":1024,"h":1536,"x":148,"y":59,"bw":656,"bh":1437},mage:{src:'adventure-rihoko-v2.png',w:1024,h:1536,x:246,y:111,bw:605,bh:1370}};
+  const frames={hero:{"src":"adventure-rock-style-v3.png","w":1024,"h":1536,"x":255,"y":61,"bw":665,"bh":1406},chisa:{"src":"adventure-ceria-style-v2.png","w":1024,"h":1536,"x":148,"y":59,"bw":656,"bh":1437},mage:{src:'adventure-rihoko-v2.png',w:1024,h:1536,x:246,y:111,bw:605,bh:1370}};
   const frame=frames[kind];if(frame)return '<span class="adv-figure"><img class="adv-sprite adv-normalized" data-body-height="'+frame.bh+'" data-body-top="'+frame.y+'" style="height:'+frame.h/frame.bh*100+'%;top:'+(-frame.y/frame.bh*100)+'%;transform:translateX('+(-(frame.x+frame.bw/2)/frame.w*100)+'%)" src="'+frame.src+'" alt="" draggable="false"></span>';
 
-  const assets={hero:"adventure-rock-style-v2.png",mage:"adventure-rihoko-v2.png",chisa:"adventure-ceria-style-v2.png",moss:"adventure-mirror-sentinel-v1.png",wolf:"adventure-mirror-hound-v1.png",warden:"adventure-mirror-boss-v1.png"};if(assets[kind])return '<img class="adv-sprite adv-family-sprite adv-sprite-'+kind+'" src="'+assets[kind]+'" alt="" draggable="false">';
+  const assets={hero:"adventure-rock-style-v3.png",mage:"adventure-rihoko-v2.png",chisa:"adventure-ceria-style-v2.png",moss:"adventure-mirror-sentinel-v1.png",wolf:"adventure-mirror-hound-v1.png",warden:"adventure-mirror-boss-v1.png"};if(assets[kind])return '<img class="adv-sprite adv-family-sprite adv-sprite-'+kind+'" src="'+assets[kind]+'" alt="" draggable="false">';
   const shapes={
     hero:'<path fill="#23315b" d="M18 29h29l4 34H15z"/><path fill="#b39b6a" d="M24 57h8v16h-8zm13 0h8v16h-8z"/><path fill="#1b2038" d="M20 69h14v8H20zm16 0h15v8H36z"/><path fill="#e4bc8d" d="M23 13h21v19H23z"/><path fill="#573c34" d="M20 16h6v20h-6zm22 0h5v19h-5z"/><path fill="#e6dec1" d="M24 30h19l-6 13h-7z"/><path fill="#bd695b" d="M18 47h29v5H18z"/><path fill="#22304b" d="M19 7h28v10H19zM11 15h44v5H11z"/><path fill="#ead7a8" d="m42 7 9-6 3 4-11 8zM47 43h16v4H47z"/><path fill="#c8e1df" d="M54 18h3v26h-3z"/><path fill="#cbb27a" d="M53 46h5v11h-5z"/><path fill="#253044" d="M28 22h3v3h-3zm10 0h3v3h-3z"/>',
     mage:'<path fill="#652f4d" d="M22 33h23l10 39H12z"/><path fill="#9a536d" d="M24 34h18l6 30H18z"/><path fill="#d7bc8e" d="M23 13h21v21H23z"/><path fill="#48333c" d="M19 10h28v9H19zm0 7h6v26h-6zm24 0h7v24h-7z"/><path fill="#e9dfc3" d="M24 31h18l-9 9z"/><path fill="#d9b970" d="M23 44h21v4H23z"/><path fill="#253044" d="M28 23h3v3h-3zm10 0h3v3h-3zM17 70h13v7H17zm19 0h12v7H36z"/><path fill="#c9b48a" d="M49 29h13v20H49z"/><path fill="#597a91" d="M50 30h10v18H50z"/><path fill="#f4dea1" d="m54 19 4-8 5 9-5 7z"/>',
@@ -3646,7 +3646,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.33"; // 共通JSONインポート・クエスト表示設定
+const APP_VERSION="OS v7.34"; // 共通JSONインポート・クエスト表示設定
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

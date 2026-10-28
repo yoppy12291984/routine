@@ -1401,13 +1401,14 @@ function advParty(s,battle=false){const st=AdventureCore.stats(s);return Adventu
 let adventureAudio=null,adventureAudioError=false,adventureAudioPending=false,adventureAudioEpoch=0,adventureAudioAbort=null;
 let adventureVolume=Number(load('routine_adventure_volume_v1',0.3));if(!Number.isFinite(adventureVolume))adventureVolume=.3;adventureVolume=Math.max(0,Math.min(1,adventureVolume));
 const adventureTracks={
+ remembrance:{title:'また会える空',file:'adventure-remembrance-v9.wav',detail:'約76秒 · 弦が歌うオーケストラ / 木管・ハープ'},
  afterglow:{title:'帰り道の灯り',file:'adventure-afterglow-v8.wav',detail:'約80秒 · ピアノとチェロ / 静かな余韻'},
  horizon:{title:'光の彼方へ',file:'adventure-horizon-v6.wav',detail:'約87秒 · オーケストラ / 実録音の弦・ホルン・ハープ'},
  courtyard:{title:'陽だまりの回廊',file:'adventure-courtyard-v5.wav',detail:'約60秒 · ピアノの3拍子 / やわらかな打楽器'},
  daybreak:{title:'朝風の向こうへ',file:'adventure-daybreak-v4.wav',detail:'約77秒 · 明るい旅 / 木管・ピアノ・ハープ'},
  homeward:{title:'遠い空、帰る場所',file:'adventure-homeward-v3.wav',detail:'約91秒 · 静かな旅 / 弦・ピアノ・木管'}
 };
-let adventureTrack=load('routine_adventure_track_v1','afterglow');
+let adventureTrack=load('routine_adventure_track_v1','remembrance');
 if(!Object.hasOwn(adventureTracks,adventureTrack)){adventureTrack='afterglow';lset('routine_adventure_track_v1',adventureTrack);}
 function advMusicMarkup(){const track=adventureTracks[adventureTrack];return '<section class="adv-music" aria-label="Adventure BGM"><div><span>ORIGINAL SOUNDTRACK</span><b>'+track.title+'</b><label>曲を選ぶ <select id="advMusicTrack" aria-label="BGMの曲">'+Object.entries(adventureTracks).map(([id,t])=>'<option value="'+id+'"'+(id===adventureTrack?' selected':'')+'>'+t.title+'</option>').join('')+'</select></label><small id="advMusicStatus" role="status"></small></div><button data-adv="music" id="advMusicToggle" aria-pressed="false">▶ BGMを再生</button><label>音量 <input id="advMusicVolume" type="range" min="0" max="100" step="1" value="'+Math.round(adventureVolume*100)+'" aria-label="BGM音量"></label><a href="'+track.file+'" download="'+track.title+'.wav">曲を保存 ↗</a><details class="adv-audio-fallback"><summary>音が出ない場合：標準プレーヤー</summary><audio controls loop preload="none" src="'+track.file+'" aria-label="BGM標準プレーヤー"></audio><small>こちらの▶でも再生できます。端末のメディア音量も確認してください。</small></details></section>';}
 document.getElementById('adventureRoot').addEventListener('change',e=>{
@@ -3646,7 +3647,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.35"; // 共通JSONインポート・クエスト表示設定
+const APP_VERSION="OS v7.36"; // 共通JSONインポート・クエスト表示設定
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();

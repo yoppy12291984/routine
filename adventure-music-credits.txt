@@ -7,3 +7,5 @@ Pinned revision: 440300901dfe9275fd84e0b7763af1f8443ae62e
 Sample license: CC0 1.0 Universal (public domain dedication).
 https://creativecommons.org/publicdomain/zero/1.0/
 Only instrument recordings are reused; the composition is original.
+
+Original orchestral piece: また会える空 (Remembrance), using the same CC0 instrument recordings.

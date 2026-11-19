@@ -281,7 +281,7 @@
 
 
 /* Family cast: reusable original artwork, three-member party. */
-.adv-family-sprite{object-fit:contain;image-rendering:auto}.adv-party{grid-template-columns:repeat(3,minmax(0,1fr))}.adv-party-card{flex-direction:column;padding:10px 7px}.adv-portrait{width:100%;height:135px}.adv-party-info{width:100%}.adv-name{font-size:12px}.adv-actor{width:72px;height:94px}.adv-allies{display:flex;gap:0;right:5%;align-items:center}.adv-actor:nth-child(2){margin-top:46px}.adv-actor:nth-child(3){margin-top:90px}.adv-arena{height:270px}.adv-character-select{grid-template-columns:repeat(3,minmax(0,1fr))}.adv-character-select button{font-size:11px;padding:10px 3px}.adv-story-portrait{width:90px;height:115px}@media(min-width:600px){.adv-portrait{height:210px}.adv-actor{width:100px;height:135px}.adv-arena{height:340px}}
+.adventure-launch[hidden]{display:none!important}.adv-family-sprite{object-fit:contain;image-rendering:auto}.adv-party{grid-template-columns:repeat(3,minmax(0,1fr))}.adv-party-card{flex-direction:column;padding:10px 7px}.adv-portrait{width:100%;height:135px}.adv-party-info{width:100%}.adv-name{font-size:12px}.adv-actor{width:72px;height:94px}.adv-allies{display:flex;gap:0;right:5%;align-items:center}.adv-actor:nth-child(2){margin-top:46px}.adv-actor:nth-child(3){margin-top:90px}.adv-arena{height:270px}.adv-character-select{grid-template-columns:repeat(3,minmax(0,1fr))}.adv-character-select button{font-size:11px;padding:10px 3px}.adv-story-portrait{width:90px;height:115px}@media(min-width:600px){.adv-portrait{height:210px}.adv-actor{width:100px;height:135px}.adv-arena{height:340px}}
 
 #viewAdventure .adv-allies{flex-direction:row;right:3%;bottom:15px;gap:0}#viewAdventure .adv-actor{height:110px;width:64px;margin-right:0}#viewAdventure .adv-arena{height:250px}#viewAdventure .adv-actor:nth-child(2){margin-top:40px}#viewAdventure .adv-actor:nth-child(3){margin-top:80px}@media(min-width:600px){#viewAdventure .adv-actor{width:110px;height:150px}#viewAdventure .adv-arena{height:340px}}
 
@@ -315,7 +315,7 @@
   <button class="tab" id="tabToday">Today</button>
   <button class="tab" id="tabWorkout" style="display:none">Training</button>
   <button class="tab" id="tabCal">Calendar</button>
-  <button class="tab" id="tabAdventure">Adventure</button>
+  <button class="tab" id="tabAdventure" style="display:none">Adventure</button>
   <button class="tab" id="tabNutrition">Nutrition</button>
   <button class="tab" id="tabNotes">Notes</button>
   <button class="tab" id="tabInvest">Investment</button>
@@ -365,7 +365,7 @@
   <button id="resetAll" style="border-color:#d4795f;color:#d4795f">初期項目に戻す</button>
 </div>
 
-<section class="adventure-launch"><div><small>ROUTINE CHRONICLES</small><strong>太陽王の影</strong><p id="adventureRoutineLevel"></p><p id="adventureRoutineMessage">今日のルーチン1件で、仲間全員に10 EXP。</p></div><button id="adventureOpen" class="btn-primary">冒険へ →</button></section>
+<section class="adventure-launch" hidden><div><small>ROUTINE CHRONICLES</small><strong>太陽王の影</strong><p id="adventureRoutineLevel"></p><p id="adventureRoutineMessage">今日のルーチン1件で、仲間全員に10 EXP。</p></div><button id="adventureOpen" class="btn-primary">冒険へ →</button></section>
 <section class="rq-card" id="routineQuest" hidden aria-label="Routine Quest">
   <div class="rq-head">
     <img class="rq-hero" src="routine-adventurer-v1.png?v=20261006" alt="冒険者アイコン">
@@ -3416,11 +3416,18 @@ tabOrder=tabOrder.filter(k=>TAB_ORDER_DEFAULT.includes(k));
 let tabVisibility=load("routine_tab_visibility_v1",{});
 if(!tabVisibility||typeof tabVisibility!=="object"||Array.isArray(tabVisibility))tabVisibility={};
 if(typeof tabVisibility.workout!=="boolean")tabVisibility.workout=load("routine_training_visible_v1",false)===true;
+// One-time opt-out: keep the adventure and its save data available for later restoration.
+if(load("routine_adventure_hidden_v1",false)!==true){
+  tabVisibility.adventure=false;
+  lset("routine_tab_visibility_v1",tabVisibility);
+  lset("routine_adventure_hidden_v1",true);
+}
 function visibleTabs(){return tabOrder.filter(k=>tabVisibility[k]!==false);}
 if(!visibleTabs().length)tabVisibility.check=true;
 let startupTab=load("routine_startup_tab_v1","check");
-if(!visibleTabs().includes(startupTab))startupTab=visibleTabs()[0];
+if(!visibleTabs().includes(startupTab)){startupTab=visibleTabs()[0];lset("routine_startup_tab_v1",startupTab);}
 function applyTabVisibility(){
+  document.querySelector(".adventure-launch").hidden=tabVisibility.adventure===false;
   const active=tabOrder.find(k=>document.getElementById(TAB_BTN_ID[k]).classList.contains("on"));
   tabOrder.forEach(k=>{document.getElementById(TAB_BTN_ID[k]).style.display=tabVisibility[k]===false?"none":"";});
   if(active&&!visibleTabs().includes(active))showTab(visibleTabs()[0]);
@@ -3647,7 +3654,7 @@ function installRoutineSwipe(){
 }
 
 installRoutineSwipe();
-const APP_VERSION="OS v7.36"; // 共通JSONインポート・クエスト表示設定
+const APP_VERSION="OS v7.37"; // 共通JSONインポート・クエスト表示設定
 document.getElementById("verLabel").textContent=APP_VERSION;
 document.getElementById("verBar").textContent=APP_VERSION;
 render();
